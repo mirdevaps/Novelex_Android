@@ -75,6 +75,7 @@ public class HomeActivity extends AppCompatActivity {
         list.setLayoutManager(manager);
         adapter = new MainCombinedAdapter(this, titles, Collections.emptyList(), this::openDrama, category -> {}, nativeAds, this::loadNativeAd);
         adapter.setDoramaCatalog(true);
+        adapter.setAdSpacing(4, 6, 3);
         adapter.setSectionContent(getString(R.string.home_popular), getString(R.string.home_loading));
         list.setAdapter(adapter);
         GridLayoutManager releasesGrid = new GridLayoutManager(this, columns);
@@ -85,9 +86,12 @@ public class HomeActivity extends AppCompatActivity {
         releasesGrid.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() { @Override public int getSpanSize(int position) { return releasesAdapter.isFullSpan(position) ? columns : 1; }});
         releasesList.setAdapter(releasesAdapter);
         if (BuildConfig.DEBUG) com.google.android.gms.ads.MobileAds.setRequestConfiguration(new com.google.android.gms.ads.RequestConfiguration.Builder().setTestDeviceIds(Collections.singletonList("C25AC9B220BD3A44921ABFD2AEACBED7")).build());
-        com.google.android.gms.ads.MobileAds.initialize(this, status -> { adsReady = true; loadNativeAd(0); });
+        com.google.android.gms.ads.MobileAds.initialize(this, status -> {
+            adsReady = true;
+            for (int s = 0; s < 3; s++) loadNativeAd(s);
+        });
         CatalogInterstitial.getInstance().preload(this);
-        loadNativeAd(0);
+        for (int s = 0; s < 3; s++) loadNativeAd(s);
         loadLocalCatalogInstant();
         loadRankingFromFirebase();
     }
@@ -132,7 +136,7 @@ public class HomeActivity extends AppCompatActivity {
             List<Drama> initialPopular = new ArrayList<>();
             for (Drama d : sortedPopular) {
                 if (d.getPoster() != null && !d.getPoster().isEmpty()) initialPopular.add(d);
-                if (initialPopular.size() == 16) break;
+                if (initialPopular.size() == 28) break;
             }
 
             runOnUiThread(() -> {
@@ -292,8 +296,8 @@ public class HomeActivity extends AppCompatActivity {
                             }
                         }
 
-                        // Se tiver menos de 18 títulos curtidos, completar com os mais assistidos do catálogo
-                        if (mostLiked.size() < 18) {
+                        // Se tiver menos de 28 títulos curtidos, completar com os mais assistidos do catálogo
+                        if (mostLiked.size() < 28) {
                             List<Drama> fallback = new ArrayList<>(fullCatalog);
                             fallback.sort((a, b) -> {
                                 int ep = Integer.compare(b.getEpisodesCount(), a.getEpisodesCount());
@@ -303,7 +307,7 @@ public class HomeActivity extends AppCompatActivity {
                                 if (!addedIds.contains(d.getId()) && d.getPoster() != null && !d.getPoster().isEmpty()) {
                                     mostLiked.add(d);
                                     addedIds.add(d.getId());
-                                    if (mostLiked.size() >= 18) break;
+                                    if (mostLiked.size() >= 28) break;
                                 }
                             }
                         }
@@ -360,7 +364,11 @@ public class HomeActivity extends AppCompatActivity {
             long delay = Math.max(0L, impressionTimes.getOrDefault(slot, 0L) + 10_000L - android.os.SystemClock.elapsedRealtime());
             sliderHandler.postDelayed(() -> displayPendingAd(slot, entry.getValue()), delay);
         }
-        loadNativeAd(0);
+        for (int s = 0; s < 3; s++) {
+            if (!nativeAds.containsKey(s) || impressedSlots.contains(s)) {
+                loadNativeAd(s);
+            }
+        }
     }
     @Override protected void onDestroy() {
         sliderHandler.removeCallbacksAndMessages(null);

@@ -48,9 +48,16 @@ public class MainCombinedAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
     private final OnCategorySelectListener categoryListener;
     private final OnNativeAdSlotRequestedListener nativeAdSlotListener;
 
-    private static final int FIRST_AD_AFTER_DRAMAS = 4;
-    private static final int DRAMAS_BETWEEN_ADS = 24;
-    private static final int MAX_NATIVE_AD_SLOTS = 6;
+    private int firstAdAfterDramas = 4;
+    private int dramasBetweenAds = 24;
+    private int maxNativeAdSlots = 6;
+
+    public void setAdSpacing(int firstAdAfter, int betweenAds, int maxSlots) {
+        this.firstAdAfterDramas = firstAdAfter;
+        this.dramasBetweenAds = betweenAds;
+        this.maxNativeAdSlots = maxSlots;
+        notifyDataSetChanged();
+    }
 
     public MainCombinedAdapter(Context context, List<Drama> dramaList, List<String> categories,
                                OnDramaClickListener dramaListener, OnCategorySelectListener categoryListener,
@@ -101,21 +108,21 @@ public class MainCombinedAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
     public int positionForDrama(int index) {
         int position = index + 1;
         for (int slot = 0; slot < availableAdSlotCount(); slot++) {
-            if (FIRST_AD_AFTER_DRAMAS + slot * DRAMAS_BETWEEN_ADS <= index) position++;
+            if (firstAdAfterDramas + slot * dramasBetweenAds <= index) position++;
         }
         return position;
     }
 
     private int availableAdSlotCount() {
         if (nativeAdSlotListener == null) return 0;
-        if (dramaList == null || dramaList.size() < FIRST_AD_AFTER_DRAMAS) return 0;
-        int available = 1 + (dramaList.size() - FIRST_AD_AFTER_DRAMAS) / DRAMAS_BETWEEN_ADS;
-        return Math.min(MAX_NATIVE_AD_SLOTS, available);
+        if (dramaList == null || dramaList.size() < firstAdAfterDramas) return 0;
+        int available = 1 + (dramaList.size() - firstAdAfterDramas) / dramasBetweenAds;
+        return Math.min(maxNativeAdSlots, available);
     }
 
     private int adapterPositionForAdSlot(int slotIndex) {
         if (slotIndex < 0 || slotIndex >= availableAdSlotCount()) return -1;
-        int dramaCountBefore = FIRST_AD_AFTER_DRAMAS + slotIndex * DRAMAS_BETWEEN_ADS;
+        int dramaCountBefore = firstAdAfterDramas + slotIndex * dramasBetweenAds;
         return 1 + dramaCountBefore + slotIndex;
     }
 
