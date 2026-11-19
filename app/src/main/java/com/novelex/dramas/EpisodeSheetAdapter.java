@@ -10,23 +10,39 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
+import com.google.android.gms.ads.nativead.NativeAd;
+import com.google.android.gms.ads.nativead.NativeAdView;
 import java.io.File;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-public class EpisodeSheetAdapter extends RecyclerView.Adapter<EpisodeSheetAdapter.EpisodeViewHolder> {
+public class EpisodeSheetAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     public interface OnEpisodeSelectedListener {
         void onEpisodeSelected(int position, boolean isLocked);
     }
+
+    public interface OnNativeAdSlotRequestedListener {
+        void onNativeAdSlotRequested(int slotIndex);
+    }
+
+    private static final int TYPE_EPISODE = 0;
+    private static final int TYPE_NATIVE_AD = 1;
+
+    private static final int FIRST_AD_AFTER_EPS = 5;
+    private static final int EPS_BETWEEN_ADS = 10;
+    private static final int MAX_NATIVE_ADS = 3;
 
     private final Context context;
     private final String dramaId;
     private final List<Episode> episodes;
     private final int currentPlayingIndex;
     private final EpisodeAccess access;
+    private final Map<Integer, NativeAd> nativeAds;
+    private final OnNativeAdSlotRequestedListener nativeAdSlotListener;
     private final OnEpisodeSelectedListener listener;
     private final Set<Integer> downloadedEpisodes = new HashSet<>();
     private final Set<String> watchedEpisodes;
@@ -37,11 +53,21 @@ public class EpisodeSheetAdapter extends RecyclerView.Adapter<EpisodeSheetAdapte
     public EpisodeSheetAdapter(Context context, String dramaId, List<Episode> episodes,
                                int currentPlayingIndex, EpisodeAccess access,
                                OnEpisodeSelectedListener listener) {
+        this(context, dramaId, episodes, currentPlayingIndex, access, null, null, listener);
+    }
+
+    public EpisodeSheetAdapter(Context context, String dramaId, List<Episode> episodes,
+                               int currentPlayingIndex, EpisodeAccess access,
+                               Map<Integer, NativeAd> nativeAds,
+                               OnNativeAdSlotRequestedListener nativeAdSlotListener,
+                               OnEpisodeSelectedListener listener) {
         this.context = context;
         this.dramaId = dramaId;
         this.episodes = episodes;
         this.currentPlayingIndex = currentPlayingIndex;
         this.access = access;
+        this.nativeAds = nativeAds;
+        this.nativeAdSlotListener = nativeAdSlotListener;
         this.listener = listener;
 
         this.colorPink = context.getColor(R.color.novelex_primary_pink);
@@ -51,7 +77,6 @@ public class EpisodeSheetAdapter extends RecyclerView.Adapter<EpisodeSheetAdapte
         this.watchedEpisodes = context.getSharedPreferences("novelex_prefs", Context.MODE_PRIVATE)
             .getStringSet("review_completed_episodes", Collections.emptySet());
 
-        // Preload downloaded files in directory once to avoid disk I/O in onBindViewHolder
         try {
             File dir = new File(context.getExternalFilesDir(Environment.DIRECTORY_MOVIES), "novelex_" + dramaId);
             if (dir.exists() && dir.isDirectory()) {
@@ -71,16 +96,90 @@ public class EpisodeSheetAdapter extends RecyclerView.Adapter<EpisodeSheetAdapte
         } catch (Exception ignored) {}
     }
 
-    @NonNull
-    @Override
-    public EpisodeViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_sheet_episode, parent, false);
-        return new EpisodeViewHolder(view);
+    public int availableAdSlotCount() {
+        if (nativeAdSlotListener == null || episodes == null || episodes.size() < FIRST_AD_AFTER_EPS) return 0;
+        int count = 1 + (episodes.size() - FIRST_AD_AFTER_EPS) / EPS_BETWEEN_ADS;
+        return Math.min(MAX_NATIVE_ADS, count);
+    }
+
+    public int adapterPositionForAdSlot(int slotIndex) {
+        if (slotIndex < 0 || slotIndex >= availableAdSlotCount()) return -1;
+        int episodesBefore = FIRST_AD_AFTER_EPS + slotIndex * EPS_BETWEEN_ADS;
+        return episodesBefore + slotIndex;
+    }
+
+    public int nativeAdSlotAtPosition(int position) {
+        for (int slot = 0; slot < availableAdSlotCount(); slot++) {
+            if (adapterPositionForAdSlot(slot) == position) return slot;
+        }
+        return -1;
+    }
+
+    public int episodeIndexAtPosition(int position) {
+        int adsBefore = 0;
+        for (int slot = 0; slot < availableAdSlotCount(); slot++) {
+            if (adapterPositionForAdSlot(slot) < position) adsBefore++;
+            else break;
+        }
+        return position - adsBefore;
+    }
+
+    public int positionForEpisode(int episodeIndex) {
+        int position = episodeIndex;
+        for (int slot = 0; slot < availableAdSlotCount(); slot++) {
+            if (FIRST_AD_AFTER_EPS + slot * EPS_BETWEEN_ADS <= episodeIndex) {
+                position++;
+            }
+        }
+        return position;
+    }
+
+    public void notifyNativeAdChanged(int slotIndex) {
+        int position = adapterPositionForAdSlot(slotIndex);
+        if (position >= 0 && position < getItemCount()) {
+            notifyItemChanged(position);
+        }
     }
 
     @Override
-    public void onBindViewHolder(@NonNull EpisodeViewHolder holder, int position) {
-        Episode ep = episodes.get(position);
+    public int getItemCount() {
+        int epCount = episodes != null ? episodes.size() : 0;
+        return epCount + availableAdSlotCount();
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        return nativeAdSlotAtPosition(position) >= 0 ? TYPE_NATIVE_AD : TYPE_EPISODE;
+    }
+
+    @NonNull
+    @Override
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        if (viewType == TYPE_NATIVE_AD) {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_main_native_ad, parent, false);
+            return new NativeAdViewHolder(view);
+        } else {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_sheet_episode, parent, false);
+            return new EpisodeViewHolder(view);
+        }
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder rawHolder, int position) {
+        if (rawHolder instanceof NativeAdViewHolder) {
+            int slotIndex = nativeAdSlotAtPosition(position);
+            NativeAd ad = nativeAds != null ? nativeAds.get(slotIndex) : null;
+            ((NativeAdViewHolder) rawHolder).bind(ad);
+            if (ad == null && nativeAdSlotListener != null) {
+                nativeAdSlotListener.onNativeAdSlotRequested(slotIndex);
+            }
+            return;
+        }
+
+        EpisodeViewHolder holder = (EpisodeViewHolder) rawHolder;
+        int epIndex = episodeIndexAtPosition(position);
+        if (epIndex < 0 || epIndex >= episodes.size()) return;
+        Episode ep = episodes.get(epIndex);
 
         Glide.with(context)
             .load(ep.getThumbnail())
@@ -104,7 +203,7 @@ public class EpisodeSheetAdapter extends RecyclerView.Adapter<EpisodeSheetAdapte
         } else {
             holder.lockIcon.setVisibility(View.GONE);
             holder.btnText.setTextColor(0xFFFFFFFF);
-            if (position == currentPlayingIndex) {
+            if (epIndex == currentPlayingIndex) {
                 holder.container.setBackgroundResource(R.drawable.bg_sheet_episode_button_active);
             } else {
                 holder.container.setBackgroundResource(R.drawable.bg_sheet_episode_button);
@@ -113,32 +212,27 @@ public class EpisodeSheetAdapter extends RecyclerView.Adapter<EpisodeSheetAdapte
 
         if (isLocked) {
             holder.episodeState.setText(R.string.episode_state_1);
-        } else if (position == currentPlayingIndex) {
+        } else if (epIndex == currentPlayingIndex) {
             holder.episodeState.setText(R.string.episode_state_0);
-        } else if (watchedEpisodes.contains(dramaId + ":" + position)) {
+        } else if (watchedEpisodes.contains(dramaId + ":" + epIndex)) {
             holder.episodeState.setText(R.string.episode_watched);
         } else {
             holder.episodeState.setText(R.string.episode_state_2);
         }
 
-        holder.itemView.setSelected(position == currentPlayingIndex);
-        holder.btnText.setTextColor(position == currentPlayingIndex && !isLocked
+        holder.itemView.setSelected(epIndex == currentPlayingIndex);
+        holder.btnText.setTextColor(epIndex == currentPlayingIndex && !isLocked
             ? colorPink : isLocked ? colorMuted : colorWhite);
 
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
-                listener.onEpisodeSelected(position, isLocked);
+                listener.onEpisodeSelected(epIndex, isLocked);
             }
         });
 
         holder.itemView.setContentDescription("Episódio " + ep.getNumber()
-            + (isLocked ? ", bloqueado" : position == currentPlayingIndex ? ", reproduzindo agora" : "")
+            + (isLocked ? ", bloqueado" : epIndex == currentPlayingIndex ? ", reproduzindo agora" : "")
             + (isDownloaded ? ", disponível offline" : ""));
-    }
-
-    @Override
-    public int getItemCount() {
-        return episodes != null ? episodes.size() : 0;
     }
 
     static class EpisodeViewHolder extends RecyclerView.ViewHolder {
@@ -159,6 +253,67 @@ public class EpisodeSheetAdapter extends RecyclerView.Adapter<EpisodeSheetAdapte
             thumbnail = itemView.findViewById(R.id.episodeThumbnail);
             rowTitle = itemView.findViewById(R.id.episodeRowTitle);
             episodeState = itemView.findViewById(R.id.episodeState);
+        }
+    }
+
+    static class NativeAdViewHolder extends RecyclerView.ViewHolder {
+        final NativeAdView adView;
+        final TextView headline;
+        final TextView body;
+        final TextView callToAction;
+        final ImageView icon;
+        private NativeAd boundNativeAd;
+
+        NativeAdViewHolder(@NonNull View itemView) {
+            super(itemView);
+            adView = (NativeAdView) itemView;
+            headline = itemView.findViewById(R.id.nativeAdHeadline);
+            body = itemView.findViewById(R.id.nativeAdBody);
+            callToAction = itemView.findViewById(R.id.nativeAdCallToAction);
+            icon = itemView.findViewById(R.id.nativeAdIcon);
+            adView.setHeadlineView(headline);
+            adView.setBodyView(body);
+            adView.setCallToActionView(callToAction);
+            adView.setIconView(icon);
+            adView.setMediaView(itemView.findViewById(R.id.nativeAdMedia));
+        }
+
+        void bind(NativeAd nativeAd) {
+            itemView.setVisibility(nativeAd == null ? View.GONE : View.VISIBLE);
+            if (nativeAd == null) {
+                boundNativeAd = null;
+                headline.setText("");
+                body.setText("");
+                callToAction.setText("");
+                icon.setImageDrawable(null);
+                return;
+            }
+            if (boundNativeAd == nativeAd) return;
+            boundNativeAd = nativeAd;
+            headline.setText(nativeAd.getHeadline());
+
+            if (nativeAd.getBody() != null) {
+                body.setText(nativeAd.getBody());
+                body.setVisibility(View.VISIBLE);
+            } else {
+                body.setVisibility(View.GONE);
+            }
+
+            if (nativeAd.getCallToAction() != null) {
+                callToAction.setText(nativeAd.getCallToAction());
+                callToAction.setVisibility(View.VISIBLE);
+            } else {
+                callToAction.setVisibility(View.GONE);
+            }
+
+            if (nativeAd.getIcon() != null) {
+                icon.setImageDrawable(nativeAd.getIcon().getDrawable());
+                icon.setVisibility(View.VISIBLE);
+            } else {
+                icon.setVisibility(View.GONE);
+            }
+
+            adView.setNativeAd(nativeAd);
         }
     }
 }

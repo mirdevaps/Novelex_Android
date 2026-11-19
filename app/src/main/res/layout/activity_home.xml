@@ -222,7 +222,7 @@
                     android:paddingEnd="12dp" />
             </LinearLayout>
 
-            <!-- Popular / Ranking Section -->
+            <!-- Popular / Ranking Section (com anúncio nativo integrado abaixo da 2ª linha) -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/homeRanking"
                 android:layout_width="match_parent"
@@ -231,12 +231,6 @@
                 android:minHeight="360dp"
                 android:nestedScrollingEnabled="false"
                 android:paddingBottom="16dp" />
-
-            <!-- Native Ad Slot -->
-            <include
-                android:id="@+id/homeNativeAd"
-                layout="@layout/item_home_native_ad"
-                android:visibility="gone" />
 
             <!-- Releases Section -->
             <androidx.recyclerview.widget.RecyclerView
