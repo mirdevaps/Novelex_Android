@@ -1,0 +1,15 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+ android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+ android:background="@drawable/gradient_bottom_scrim" android:paddingStart="16dp" android:paddingEnd="16dp" android:paddingTop="4dp" android:paddingBottom="10dp">
+ <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center" android:orientation="horizontal">
+  <ImageButton android:id="@id/exo_rew" android:layout_width="48dp" android:layout_height="48dp" android:tint="@color/novelex_text_white" android:padding="12dp" android:contentDescription="Voltar dez segundos" android:background="?android:attr/selectableItemBackgroundBorderless" />
+  <ImageButton android:id="@id/exo_play_pause" android:layout_width="48dp" android:layout_height="48dp" android:layout_marginHorizontal="28dp" android:background="?android:attr/selectableItemBackgroundBorderless" android:padding="14dp" android:tint="@color/novelex_player_white" android:contentDescription="Reproduzir ou pausar" />
+  <ImageButton android:id="@id/exo_ffwd" android:layout_width="48dp" android:layout_height="48dp" android:tint="@color/novelex_text_white" android:padding="12dp" android:contentDescription="Avançar dez segundos" android:background="?android:attr/selectableItemBackgroundBorderless" />
+ </LinearLayout>
+ <androidx.media3.ui.DefaultTimeBar android:id="@id/exo_progress" android:layout_width="match_parent" android:layout_height="26dp" app:played_color="@color/novelex_primary_pink" app:scrubber_color="@color/novelex_primary_pink_light" app:buffered_color="#66FFFFFF" app:unplayed_color="@color/novelex_outline" app:bar_height="2dp" app:scrubber_enabled_size="6dp" app:scrubber_dragged_size="12dp" />
+ <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+  <TextView android:id="@id/exo_position" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="10sp" android:fontFamily="sans-serif-medium" android:textColor="@color/novelex_text_white" />
+  <TextView android:id="@id/exo_duration" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="10sp" android:textColor="@color/novelex_text_muted" />
+ </LinearLayout>
+</LinearLayout>
+

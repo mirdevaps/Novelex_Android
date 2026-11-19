@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/mainRootLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/novelex_bg_dark">
+
+    <LinearLayout
+        android:id="@+id/topBarContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:background="@color/novelex_bg_dark"
+        android:orientation="vertical"
+        android:paddingBottom="8dp">
+
+        <RelativeLayout
+            android:id="@+id/topBarContent"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:background="@drawable/bg_novelex_topbar"
+            android:gravity="center_vertical"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:visibility="visible">
+
+            <TextView
+                android:id="@+id/pageTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="7dp"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.05"
+                android:text="NOVELEX"
+                android:textColor="@color/novelex_primary_pink"
+                android:textSize="19sp" />
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_below="@id/pageTitle" android:layout_marginTop="-2dp" android:text="@string/topbar_tagline" android:textColor="@color/novelex_text_muted" android:textSize="9sp" android:letterSpacing="0.04" />
+            <LinearLayout android:id="@+id/mainGlobalSearch" android:layout_width="132dp" android:layout_height="38dp" android:layout_alignParentEnd="true" android:layout_centerVertical="true" android:background="@drawable/bg_topbar_action" android:clickable="true" android:focusable="true" android:gravity="center_vertical" android:orientation="horizontal" android:paddingHorizontal="11dp"><ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_novelex_search" android:tint="@color/novelex_text_white" android:contentDescription=""/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="@string/search_all" android:textColor="@color/novelex_text_muted" android:textSize="12sp"/></LinearLayout>
+        </RelativeLayout>
+
+        <EditText
+            android:id="@+id/searchEditText"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:autofillHints=""
+            android:background="@drawable/bg_search_box"
+            android:drawableStart="@drawable/ic_novelex_search"
+            android:drawablePadding="12dp"
+            android:drawableTint="@color/novelex_text_muted"
+            android:hint="@string/ui_0"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:textColor="@color/novelex_text_white"
+            android:textColorHint="@color/novelex_text_hint"
+            android:textSize="14sp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+<androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/mainRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/topBarContainer"
+        android:layout_above="@id/bottomNavigation"
+        android:clipToPadding="false"
+        android:paddingBottom="20dp"
+        android:scrollbars="none" />
+
+    <LinearLayout android:id="@+id/alphabetRail" android:layout_width="30dp" android:layout_height="match_parent" android:layout_below="@id/topBarContainer" android:layout_above="@id/bottomNavigation" android:layout_alignParentEnd="true" android:orientation="vertical" android:gravity="center" android:paddingTop="8dp" android:paddingBottom="8dp" android:visibility="gone" android:background="@color/novelex_bg_dark" />
+
+    <LinearLayout
+        android:id="@+id/bottomNavigation"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:layout_alignParentBottom="true"
+        android:background="@color/novelex_bg_dark"
+        android:elevation="12dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp">
+
+        <LinearLayout android:id="@+id/navHome" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:clickable="true" android:contentDescription="@string/home_label" android:focusable="true" android:gravity="center" android:orientation="vertical" android:paddingTop="6dp" android:paddingBottom="5dp"><ImageView android:layout_width="22dp" android:layout_height="22dp" android:contentDescription="" android:src="@drawable/ic_novelex_home" android:tint="@color/novelex_text_muted"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="@string/home_label" android:textColor="@color/novelex_text_muted" android:textSize="10sp"/></LinearLayout>
+        <TextView android:id="@+id/tabShortDramas" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:gravity="center" android:text="@string/ui_1" android:textSize="10sp" android:maxLines="2" android:drawableTop="@drawable/ic_novelex_short_catalog" android:drawablePadding="3dp" android:paddingTop="7dp" android:paddingBottom="5dp" android:drawableTint="@color/novelex_text_muted" android:textColor="@color/novelex_text_muted" android:clickable="true" android:focusable="true" />
+<TextView android:id="@+id/tabDoramas" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:gravity="center" android:text="@string/ui_2" android:textSize="10sp" android:maxLines="2" android:drawableTop="@drawable/ic_novelex_dorama" android:drawablePadding="3dp" android:paddingTop="7dp" android:paddingBottom="5dp" android:drawableTint="@color/novelex_text_muted" android:textColor="@color/novelex_text_muted" android:clickable="true" android:focusable="true" />
+<LinearLayout android:id="@+id/navMyList" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/bg_catalog_tab_idle" android:clickable="true" android:contentDescription="@string/ui_26" android:focusable="true" android:gravity="center" android:orientation="vertical" android:paddingTop="6dp" android:paddingBottom="5dp">
+            <ImageView android:layout_width="22dp" android:layout_height="22dp" android:contentDescription="" android:src="@drawable/ic_novelex_bookmark" android:tint="@color/novelex_text_muted" />
+            <TextView android:id="@+id/navMyListLabel" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="@string/ui_3" android:textColor="@color/novelex_text_muted" android:textSize="11sp" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/navContinue" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/bg_catalog_tab_idle" android:clickable="true" android:contentDescription="Continuar assistindo" android:focusable="true" android:gravity="center" android:orientation="vertical" android:paddingTop="6dp" android:paddingBottom="5dp">
+            <ImageView android:layout_width="22dp" android:layout_height="22dp" android:contentDescription="" android:src="@drawable/ic_novelex_continue" android:tint="@color/novelex_text_muted" />
+            <TextView android:id="@+id/navContinueLabel" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="@string/ui_4" android:textColor="@color/novelex_text_muted" android:textSize="11sp" />
+        </LinearLayout>
+</LinearLayout>
+
+</RelativeLayout>

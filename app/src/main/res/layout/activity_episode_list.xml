@@ -1,0 +1,9 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/episodeListRoot" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@color/novelex_bg_dark">
+ <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp" android:gravity="center_vertical" android:orientation="horizontal">
+  <ImageButton android:id="@+id/episodeListBack" android:layout_width="48dp" android:layout_height="48dp" android:padding="12dp" android:src="@drawable/ic_novelex_back" android:tint="@color/novelex_text_white" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="@string/ui_39" />
+  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/ui_17" android:textColor="@color/novelex_primary_pink" android:textSize="14sp" android:letterSpacing="0.08" />
+ </LinearLayout>
+ <TextView android:id="@+id/episodeListTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="24dp" android:maxLines="2" android:ellipsize="end" android:textSize="24sp" android:textColor="@color/novelex_text_white" android:fontFamily="sans-serif-medium" />
+ <TextView android:id="@+id/episodeListCount" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="24dp" android:layout_marginTop="8dp" android:layout_marginBottom="16dp" android:textSize="12sp" android:textColor="@color/novelex_text_muted" />
+ <androidx.recyclerview.widget.RecyclerView android:id="@+id/episodeList" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:paddingHorizontal="16dp" android:paddingBottom="16dp" android:clipToPadding="false" />
+</LinearLayout>

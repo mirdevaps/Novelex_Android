@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Novelex" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">@color/novelex_primary_pink</item>
+        <item name="colorPrimaryVariant">@color/novelex_primary_pink_light</item>
+        <item name="colorOnPrimary">@color/novelex_text_white</item>
+        <item name="colorSecondary">@color/novelex_primary_pink</item>
+        <item name="colorSurface">@color/novelex_bg_card</item>
+        <item name="colorOnSurface">@color/novelex_text_white</item>
+        <item name="colorSurfaceVariant">@color/novelex_bg_card_hover</item>
+        <item name="colorOnSurfaceVariant">@color/novelex_text_muted</item>
+        <item name="colorControlHighlight">#44F07863</item>
+        <item name="android:colorAccent">@color/novelex_primary_pink</item>
+        <item name="android:textColorPrimary">@color/novelex_text_white</item>
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:statusBarColor">@color/novelex_bg_dark</item>
+        <item name="android:navigationBarColor">@color/novelex_bg_dark</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <item name="android:windowBackground">@color/novelex_bg_dark</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.Novelex.AlertDialog</item>
+        <item name="bottomSheetDialogTheme">@style/ThemeOverlay.Novelex.BottomSheetDialog</item>
+    </style>
+    <style name="ThemeOverlay.Novelex.AlertDialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="colorSurface">@color/novelex_bg_card</item>
+        <item name="colorOnSurface">@color/novelex_text_white</item>
+        <item name="colorPrimary">@color/novelex_primary_pink</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.Novelex.Dialog</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.Novelex.DialogButton.Positive</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.Novelex.DialogButton.Negative</item>
+    </style>
+    <style name="ThemeOverlay.Novelex.BottomSheetDialog" parent="ThemeOverlay.MaterialComponents.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/Widget.Novelex.BottomSheet</item>
+        <item name="colorSurface">@color/novelex_bg_sheet</item>
+    </style>
+    <style name="ShapeAppearance.Novelex.Dialog" parent="ShapeAppearance.MaterialComponents.MediumComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">24dp</item>
+    </style>
+    <style name="Widget.Novelex.DialogButton.Positive" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/novelex_primary_pink_light</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    <style name="Widget.Novelex.DialogButton.Negative" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/novelex_text_muted</item>
+    </style>
+    <style name="Widget.Novelex.BottomSheet" parent="Widget.MaterialComponents.BottomSheet.Modal">
+        <item name="backgroundTint">@color/novelex_bg_sheet</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Novelex.BottomSheet</item>
+    </style>
+    <style name="ShapeAppearance.Novelex.BottomSheet" parent="ShapeAppearance.MaterialComponents.LargeComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">26dp</item>
+        <item name="cornerSizeTopRight">26dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+</resources>

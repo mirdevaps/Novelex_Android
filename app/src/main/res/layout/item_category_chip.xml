@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/chipText"
+    android:layout_width="112dp"
+    android:layout_height="64dp"
+    android:layout_marginStart="4dp"
+    android:layout_marginEnd="4dp"
+    android:background="@drawable/bg_category_minicard"
+    android:gravity="center"
+    android:padding="10dp"
+    android:maxLines="2"
+    android:ellipsize="end"
+    android:text="@string/ui_42"
+    android:textColor="@color/novelex_text_white"
+    android:textSize="12sp"
+    android:textStyle="bold" />

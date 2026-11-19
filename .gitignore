@@ -1,0 +1,35 @@
+# Android / Gradle
+*.iml
+.gradle
+/local.properties
+/.idea/
+.DS_Store
+/build
+/*/build
+/captures
+.externalNativeBuild
+.cxx
+
+# Keystores & Assinaturas (Segredos)
+*.jks
+*.keystore
+release-key
+keystore.properties
+
+# Pacotes e Binários gerados
+*.apk
+*.ap_
+*.aab
+*.dex
+/app/release/
+release/
+
+# Logs e arquivos de sistema
+*.log
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+
+# Dados internos de scraping / migração
+vod-review/
+**/vod-review/**

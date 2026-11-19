@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/playerRootLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0A0910"
+    android:keepScreenOn="true">
+
+    <!-- PlayerView Media3 Nativo -->
+    <androidx.media3.ui.PlayerView
+        android:id="@+id/singlePlayerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:use_controller="false"
+        app:resize_mode="zoom"
+        app:surface_type="texture_view" />
+
+    <!-- Camada Transparente dedicada para Gestos de Toque (1x Pausa, 2x Curte, Fling troca ep) -->
+    <View
+        android:id="@+id/touchOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="true"
+        android:focusable="true" />
+
+    <!-- Indicador de Carregamento Centralizado -->
+    <ProgressBar
+        android:id="@+id/playerBuffering"
+        android:layout_width="54dp"
+        android:layout_height="54dp"
+        android:layout_centerInParent="true"
+        android:indeterminateTint="@color/novelex_primary_pink"
+        android:visibility="gone" />
+
+    <!-- Ícone de Play Flutuante quando pausado (1 clique) -->
+    <ImageView
+        android:id="@+id/imgPlayPauseOverlay"
+        android:layout_width="76dp"
+        android:layout_height="76dp"
+        android:layout_centerInParent="true"
+        android:src="@drawable/ic_play_overlay"
+        android:visibility="gone" />
+
+    <!-- Coração Gigante Animado de Duplo Clique (Instagram/TikTok style) -->
+    <ImageView
+        android:id="@+id/bigHeartAnim"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_centerInParent="true"
+        android:src="@drawable/ic_heart_filled"
+        app:tint="@color/novelex_primary_pink"
+        android:alpha="0"
+        android:visibility="gone" />
+
+    <!-- Barra Superior: Voltar e Título com Gradiente -->
+    <RelativeLayout
+        android:id="@+id/playerTopBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="12dp"
+        android:background="@drawable/gradient_bottom_scrim"
+        android:rotation="180">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:rotation="180">
+
+            <ImageView
+                android:id="@+id/btnBack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:contentDescription="@string/ui_40"
+                android:clickable="true"
+                android:focusable="true"
+                android:layout_centerVertical="true"
+                android:background="@drawable/bg_player_circle"
+                android:src="@drawable/ic_novelex_back"
+                android:padding="9dp"
+                app:tint="@color/novelex_player_white" />
+
+            <TextView
+                android:id="@+id/playerDramaTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toEndOf="@id/btnBack"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="14dp"
+                android:layout_marginEnd="50dp"
+                android:text="Título do Drama"
+                android:textColor="@color/novelex_player_white"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </RelativeLayout>
+    </RelativeLayout>
+
+    <!-- Botões Flutuantes na Lateral Direita -->
+    <LinearLayout
+        android:id="@+id/sideActionsLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="80dp"
+        android:layout_marginEnd="14dp"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <!-- Botão Episódio Anterior -->
+        <ImageView
+            android:id="@+id/btnPrevEpisode"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="Episódio anterior"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="@drawable/bg_player_circle"
+            android:src="@drawable/ic_novelex_previous"
+            android:padding="9dp"
+            app:tint="@color/novelex_player_white" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/ui_8"
+            android:textColor="@color/novelex_player_white"
+            android:textSize="9sp"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="10dp" />
+
+        <!-- Curtir (Coração com contador) -->
+        <ImageView
+            android:id="@+id/btnLike"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:contentDescription="Curtir drama"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="@drawable/bg_player_circle"
+            android:src="@drawable/ic_heart_filled"
+            android:padding="10dp"
+            app:tint="@color/novelex_player_white" />
+        <TextView
+            android:id="@+id/txtLikeCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textColor="@color/novelex_player_white"
+            android:textSize="10sp"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="10dp" />
+
+        <!-- Salvar Favoritos -->
+        <ImageView
+            android:id="@+id/btnFavorite"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:contentDescription="Salvar nos favoritos"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="@drawable/bg_player_circle"
+            android:src="@drawable/ic_novelex_bookmark"
+            android:padding="10dp"
+            app:tint="@color/novelex_player_white" />
+        <TextView
+            android:id="@+id/txtFavorite"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/ui_5"
+            android:textColor="@color/novelex_player_white"
+            android:textSize="10sp"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="10dp" />
+
+        <!-- Baixar Offline -->
+        <ImageView
+            android:id="@+id/btnDownload"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:contentDescription="Baixar episódio"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="@drawable/bg_player_circle"
+            android:src="@drawable/ic_novelex_download"
+            android:padding="10dp"
+            app:tint="@color/novelex_player_white" />
+        <TextView
+            android:id="@+id/txtDownload"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/ui_6"
+            android:textColor="@color/novelex_player_white"
+            android:textSize="10sp"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="10dp" />
+
+        <!-- Lista de Capítulos -->
+        <ImageView
+            android:id="@+id/btnEpisodesList"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:contentDescription="Abrir lista de episódios"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="@drawable/bg_player_circle"
+            android:src="@drawable/ic_novelex_episodes"
+            android:padding="10dp"
+            app:tint="@color/novelex_primary_pink" />
+        <TextView
+            android:id="@+id/txtEpisodesCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/ui_7"
+            android:textColor="@color/novelex_player_white"
+            android:textSize="10sp"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="10dp" />
+
+        <!-- Próximo Episódio -->
+        <ImageView
+            android:id="@+id/btnNextEpisode"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="Próximo episódio"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="@drawable/bg_pink_button"
+            android:src="@drawable/ic_novelex_next"
+            android:padding="9dp"
+            app:tint="@color/novelex_player_white" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/ui_9"
+            android:textColor="@color/novelex_primary_pink"
+            android:textSize="9sp"
+            android:textStyle="bold"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+
+    <!-- Overlay Rodapé: Episódio, Título e Sinopse -->
+    <LinearLayout
+        android:id="@+id/playerBottomOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_toStartOf="@+id/sideActionsLayout"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="20dp"
+        android:padding="12dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/playerEpisodeNumber"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_player_episode_label"
+            android:text="EPISÓDIO 1"
+            android:textColor="@color/novelex_primary_pink_light"
+            android:textSize="10sp"
+            android:letterSpacing="0.06"
+            android:textStyle="bold"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="5dp"
+            android:paddingBottom="5dp" />
+
+        <TextView
+            android:id="@+id/playerEpisodeTitle"
+            android:shadowColor="#99000000"
+            android:shadowRadius="3"
+            android:shadowDy="1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="Capítulo 1"
+            android:textColor="@color/novelex_player_white"
+            android:textSize="18sp"
+            android:fontFamily="sans-serif-medium"
+            android:textStyle="bold"
+            android:maxLines="2"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/playerDramaSynopsis"
+            android:shadowColor="#99000000"
+            android:shadowRadius="2"
+            android:shadowDy="1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="7dp"
+            android:lineSpacingExtra="3dp"
+            android:text="Sinopse do drama..."
+            android:textColor="@color/novelex_player_muted"
+            android:textSize="12sp"
+            android:maxLines="2"
+            android:ellipsize="end" />
+    </LinearLayout>
+
+</RelativeLayout>
