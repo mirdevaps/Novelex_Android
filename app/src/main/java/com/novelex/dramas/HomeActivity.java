@@ -6,7 +6,7 @@ import android.view.View;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.*;
 import androidx.recyclerview.widget.*;
-import com.google.firebase.firestore.*;
+import com.google.firebase.database.*;
 import java.util.*;
 
 public class HomeActivity extends AppCompatActivity {
@@ -30,7 +30,8 @@ public class HomeActivity extends AppCompatActivity {
         if (!highlights.isEmpty()) highlightPager.setCurrentItem((highlightPager.getCurrentItem() + 1) % highlights.size(), true);
         sliderHandler.postDelayed(this, 5000);
     }};
-    private com.google.firebase.firestore.ListenerRegistration ranking;
+    private Query rankingQuery;
+    private ValueEventListener rankingListener;
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state); setContentView(R.layout.activity_home);
         View root = findViewById(R.id.homeRoot);
@@ -151,70 +152,80 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
     private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
+    private static boolean initialRankingLoaded = false;
     @Override protected void onStart() {
         super.onStart();
         sliderHandler.postDelayed(advanceSlide, 5000);
-        ranking = FirebaseFirestore.getInstance().collection("dramas")
-            .orderBy("likes_count", Query.Direction.DESCENDING).limit(30)
-            .addSnapshotListener((snapshot, error) -> {
-                if (error != null) {
-                    adapter.setSectionContent(getString(R.string.home_popular), getString(R.string.home_error)); return;
-                }
-                if (snapshot == null) return;
-                List<String> ids = new ArrayList<>();
-                for (DocumentSnapshot doc : snapshot.getDocuments()) {
-                    Number likes = (Number) doc.get("likes_count");
-                    if (likes != null && likes.longValue() > 0) ids.add(doc.getId());
-                }
-                new Thread(() -> {
-                    Map<String, Drama> catalog = new HashMap<>();
-                    List<Drama> fullCatalog = DatabaseHelper.getInstance(this).getAllDramas(-1, 0);
-                    for (Drama d : fullCatalog) catalog.put(d.getId(), d);
-                    List<Drama> ordered = new ArrayList<>();
-                    for (String id : ids) if (catalog.containsKey(id)) ordered.add(catalog.get(id));
-                    List<Drama> featured = new ArrayList<>(ordered.subList(0, Math.min(8, ordered.size())));
-                    Set<String> featuredIds = new HashSet<>();
-                    for (Drama d : featured) featuredIds.add(d.getId());
-                    fullCatalog.sort((a, b) -> {
-                        int year = Integer.compare(b.getYear(), a.getYear());
-                        if (year != 0) return year;
-                        int episodes = Integer.compare(b.getEpisodesCount(), a.getEpisodesCount());
-                        return episodes != 0 ? episodes : a.getTitle().compareToIgnoreCase(b.getTitle());
-                    });
-                    List<Drama> latest = new ArrayList<>();
-                    for (Drama d : fullCatalog) {
-                        if (!d.getPoster().isEmpty()) latest.add(d);
-                        if (latest.size() == 16) break;
-                    }
-                    boolean wantDorama = featured.stream().noneMatch(d -> d.getId().startsWith("dorama_"));
-                    while (featured.size() < 8) {
-                        Drama choice = null;
-                        for (Drama d : fullCatalog) {
-                            boolean dorama = d.getId().startsWith("dorama_") || d.getGenre().toLowerCase(java.util.Locale.ROOT).contains("dorama");
-                            if (!featuredIds.contains(d.getId()) && dorama == wantDorama && !d.getBanner().isEmpty()) { choice = d; break; }
+        if (!initialRankingLoaded) {
+            initialRankingLoaded = true;
+            Query rankingQuery = FirebaseDatabase.getInstance().getReference("dramas")
+                .orderByChild("likes_count").limitToLast(30);
+            rankingQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@androidx.annotation.NonNull DataSnapshot snapshot) {
+                    List<String> ids = new ArrayList<>();
+                    for (DataSnapshot doc : snapshot.getChildren()) {
+                        Number likes = (Number) doc.child("likes_count").getValue();
+                        if (likes != null && likes.longValue() > 0 && doc.getKey() != null) {
+                            ids.add(doc.getKey());
                         }
-                        if (choice == null) for (Drama d : fullCatalog) if (!featuredIds.contains(d.getId()) && !d.getBanner().isEmpty()) { choice = d; break; }
-                        if (choice == null) break;
-                        featured.add(choice); featuredIds.add(choice.getId()); wantDorama = !wantDorama;
                     }
-                    runOnUiThread(() -> {
-                        if (isFinishing() || isDestroyed() || !getLifecycle().getCurrentState().isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) return;
-                        titles.clear(); titles.addAll(ordered);
-                        highlights.clear(); highlights.addAll(featured);
-                        releases.clear(); releases.addAll(latest);
-                        highlightAdapter.notifyDataSetChanged();
-                        highlightPager.setVisibility(highlights.isEmpty() ? View.GONE : View.VISIBLE);
-                        updateDots(0);
-                        adapter.setSectionContent(getString(R.string.home_popular), getString(ordered.isEmpty() ? R.string.home_empty : R.string.home_ranking_info));
-                        adapter.notifyDataSetChanged();
-                        releasesAdapter.notifyDataSetChanged();
-                    });
-                }).start();
+                    Collections.reverse(ids);
+                    new Thread(() -> {
+                        Map<String, Drama> catalog = new HashMap<>();
+                        List<Drama> fullCatalog = DatabaseHelper.getInstance(HomeActivity.this).getAllDramas(-1, 0);
+                        for (Drama d : fullCatalog) catalog.put(d.getId(), d);
+                        List<Drama> ordered = new ArrayList<>();
+                        for (String id : ids) if (catalog.containsKey(id)) ordered.add(catalog.get(id));
+                        List<Drama> featured = new ArrayList<>(ordered.subList(0, Math.min(8, ordered.size())));
+                        Set<String> featuredIds = new HashSet<>();
+                        for (Drama d : featured) featuredIds.add(d.getId());
+                        fullCatalog.sort((a, b) -> {
+                            int year = Integer.compare(b.getYear(), a.getYear());
+                            if (year != 0) return year;
+                            int episodes = Integer.compare(b.getEpisodesCount(), a.getEpisodesCount());
+                            return episodes != 0 ? episodes : a.getTitle().compareToIgnoreCase(b.getTitle());
+                        });
+                        List<Drama> latest = new ArrayList<>();
+                        for (Drama d : fullCatalog) {
+                            if (!d.getPoster().isEmpty()) latest.add(d);
+                            if (latest.size() == 16) break;
+                        }
+                        boolean wantDorama = featured.stream().noneMatch(d -> d.getId().startsWith("dorama_"));
+                        while (featured.size() < 8) {
+                            Drama choice = null;
+                            for (Drama d : fullCatalog) {
+                                boolean dorama = d.getId().startsWith("dorama_") || d.getGenre().toLowerCase(java.util.Locale.ROOT).contains("dorama");
+                                if (!featuredIds.contains(d.getId()) && dorama == wantDorama && !d.getBanner().isEmpty()) { choice = d; break; }
+                            }
+                            if (choice == null) for (Drama d : fullCatalog) if (!featuredIds.contains(d.getId()) && !d.getBanner().isEmpty()) { choice = d; break; }
+                            if (choice == null) break;
+                            featured.add(choice); featuredIds.add(choice.getId()); wantDorama = !wantDorama;
+                        }
+                        runOnUiThread(() -> {
+                            if (isFinishing() || isDestroyed() || !getLifecycle().getCurrentState().isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) return;
+                            titles.clear(); titles.addAll(ordered);
+                            highlights.clear(); highlights.addAll(featured);
+                            releases.clear(); releases.addAll(latest);
+                            highlightAdapter.notifyDataSetChanged();
+                            highlightPager.setVisibility(highlights.isEmpty() ? View.GONE : View.VISIBLE);
+                            updateDots(0);
+                            adapter.setSectionContent(getString(R.string.home_popular), getString(ordered.isEmpty() ? R.string.home_empty : R.string.home_ranking_info));
+                            adapter.notifyDataSetChanged();
+                            releasesAdapter.notifyDataSetChanged();
+                        });
+                    }).start();
+                }
+
+                @Override
+                public void onCancelled(@androidx.annotation.NonNull DatabaseError error) {
+                    adapter.setSectionContent(getString(R.string.home_popular), getString(R.string.home_error));
+                }
             });
+        }
     }
     @Override protected void onStop() {
         resumed = false;
-        if (ranking != null) ranking.remove();
         sliderHandler.removeCallbacks(advanceSlide);
         super.onStop();
     }

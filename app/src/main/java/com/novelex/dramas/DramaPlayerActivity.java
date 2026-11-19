@@ -45,10 +45,12 @@ import com.google.android.gms.ads.nativead.NativeAdView;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.FieldValue;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.SetOptions;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ServerValue;
+import com.google.firebase.database.ValueEventListener;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -82,9 +84,6 @@ public class DramaPlayerActivity extends AppCompatActivity {
     private int currentEpisodeIndex = 0;
     private EpisodeAccess episodeAccess;
     private boolean isLiked = false;
-    private boolean likeRequestInFlight;
-    private com.google.firebase.firestore.ListenerRegistration likesCountListener;
-    private com.google.firebase.firestore.ListenerRegistration likedStateListener;
     private boolean isFavorite = false;
     private long likesCount = 0;
     private SharedPreferences prefs;
@@ -92,7 +91,6 @@ public class DramaPlayerActivity extends AppCompatActivity {
     private boolean episodeTransitionRunning;
     private String deviceId;
 
-    private FirebaseFirestore firestore;
     private boolean rewardedScreenActive;
     private RewardedAd rewardedAd;
     private boolean isLoadingAd = false;
@@ -127,7 +125,6 @@ public class DramaPlayerActivity extends AppCompatActivity {
                 prefs.edit().putString("device_unique_uuid", deviceId).apply();
             }
         }
-        firestore = FirebaseFirestore.getInstance();
 
         episodeAccess = new EpisodeAccess(prefs, currentDrama.getId());
         isLiked = prefs.getBoolean("liked_" + currentDrama.getId(), false);
@@ -145,7 +142,7 @@ public class DramaPlayerActivity extends AppCompatActivity {
         setupExoPlayer();
         setupActions();
         setupPlayerGestures();
-        syncWithFirestore();
+        syncWithDatabase();
 
         getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
             @Override
@@ -667,37 +664,22 @@ public class DramaPlayerActivity extends AppCompatActivity {
         });
     }
 
-    private void syncWithFirestore() {
-        if (likesCountListener != null) likesCountListener.remove();
-        if (likedStateListener != null) likedStateListener.remove();
-
-        DocumentReference dramaRef = firestore.collection("dramas").document(currentDrama.getId());
-        likesCountListener = dramaRef.addSnapshotListener((snapshot, error) -> {
-            if (error != null) {
-                android.util.Log.w("NovelexLikes", "Counter read failed: " + error.getMessage());
-                return;
+    private void syncWithDatabase() {
+        DatabaseReference dramaLikesRef = FirebaseDatabase.getInstance().getReference("dramas")
+            .child(currentDrama.getId()).child("likes_count");
+        // Leitura unica do contador ao abrir o player
+        dramaLikesRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (isFinishing() || isDestroyed()) return;
+                Long count = snapshot.getValue(Long.class);
+                if (count != null) {
+                    likesCount = Math.max(0L, count);
+                    txtLikeCount.setText(String.valueOf(likesCount));
+                }
             }
-            if (isFinishing() || isDestroyed()) return;
-            Long count = snapshot != null && snapshot.exists() ? snapshot.getLong("likes_count") : null;
-            if (count != null) {
-                likesCount = Math.max(0L, count);
-                txtLikeCount.setText(String.valueOf(likesCount));
-            }
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
-
-        likedStateListener = firestore.collection("users").document(deviceId).collection("likes")
-            .document(currentDrama.getId()).addSnapshotListener((snapshot, error) -> {
-                if (error != null) {
-                    android.util.Log.w("NovelexLikes", "Like state read failed: " + error.getMessage());
-                    return;
-                }
-                if (snapshot == null || isFinishing() || isDestroyed()) return;
-                if (snapshot.exists()) {
-                    isLiked = true;
-                    prefs.edit().putBoolean("liked_" + currentDrama.getId(), true).apply();
-                    updateLikeIcon();
-                }
-            });
 
         updateLikeIcon();
         updateFavoriteIcon();
@@ -715,27 +697,28 @@ public class DramaPlayerActivity extends AppCompatActivity {
         likesCount = Math.max(0L, likesCount + (desired ? 1 : -1));
         txtLikeCount.setText(String.valueOf(likesCount));
 
-        DocumentReference dramaRef = firestore.collection("dramas").document(currentDrama.getId());
-        DocumentReference userLikeRef = firestore.collection("users").document(deviceId)
-            .collection("likes").document(currentDrama.getId());
+        // Gravacao somente quando o usuario curte / descurte
+        DatabaseReference dramaRef = FirebaseDatabase.getInstance().getReference("dramas").child(currentDrama.getId());
+        DatabaseReference userLikeRef = FirebaseDatabase.getInstance().getReference("users").child(deviceId)
+            .child("likes").child(currentDrama.getId());
 
         if (desired) {
             Map<String, Object> data = new HashMap<>();
             data.put("drama_id", currentDrama.getId());
-            data.put("timestamp", FieldValue.serverTimestamp());
-            userLikeRef.set(data);
+            data.put("timestamp", ServerValue.TIMESTAMP);
+            userLikeRef.setValue(data);
 
-            Map<String, Object> dramaData = new HashMap<>();
-            dramaData.put("title", currentDrama.getTitle());
-            dramaData.put("likes_count", FieldValue.increment(1));
-            dramaRef.set(dramaData, SetOptions.merge());
+            Map<String, Object> dramaUpdates = new HashMap<>();
+            dramaUpdates.put("title", currentDrama.getTitle());
+            dramaUpdates.put("likes_count", ServerValue.increment(1));
+            dramaRef.updateChildren(dramaUpdates);
         } else {
-            userLikeRef.delete();
+            userLikeRef.removeValue();
 
-            Map<String, Object> dramaData = new HashMap<>();
-            dramaData.put("title", currentDrama.getTitle());
-            dramaData.put("likes_count", FieldValue.increment(-1));
-            dramaRef.set(dramaData, SetOptions.merge());
+            Map<String, Object> dramaUpdates = new HashMap<>();
+            dramaUpdates.put("title", currentDrama.getTitle());
+            dramaUpdates.put("likes_count", ServerValue.increment(-1));
+            dramaRef.updateChildren(dramaUpdates);
         }
     }
 
@@ -763,8 +746,8 @@ public class DramaPlayerActivity extends AppCompatActivity {
             prefs.edit().putBoolean("fav_" + currentDrama.getId(), isFavorite).apply();
             updateFavoriteIcon();
 
-            DocumentReference userFavRef = firestore.collection("users").document(deviceId)
-                .collection("favorites").document(currentDrama.getId());
+            DatabaseReference userFavRef = FirebaseDatabase.getInstance().getReference("users").child(deviceId)
+                .child("favorites").child(currentDrama.getId());
 
             if (isFavorite) {
                 Map<String, Object> data = new HashMap<>();
@@ -773,11 +756,11 @@ public class DramaPlayerActivity extends AppCompatActivity {
                 data.put("poster", currentDrama.getPoster());
                 data.put("genre", currentDrama.getGenre());
                 data.put("ep_count", currentDrama.getEpisodesCount());
-                data.put("timestamp", FieldValue.serverTimestamp());
-                userFavRef.set(data);
+                data.put("timestamp", ServerValue.TIMESTAMP);
+                userFavRef.setValue(data);
                 Toast.makeText(this, getString(R.string.ui_61), Toast.LENGTH_SHORT).show();
             } else {
-                userFavRef.delete();
+                userFavRef.removeValue();
                 Toast.makeText(this, getString(R.string.ui_60), Toast.LENGTH_SHORT).show();
             }
         });
@@ -829,8 +812,6 @@ public class DramaPlayerActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        if (likesCountListener != null) likesCountListener.remove();
-        if (likedStateListener != null) likedStateListener.remove();
         super.onDestroy();
         rewardedAd = null;
         if (exoPlayer != null) {
