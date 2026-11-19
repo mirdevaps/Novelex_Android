@@ -185,12 +185,12 @@ public class HlsDownloader {
 
                 for (int i = 0; i < totalSegments; i++) {
                     String segUrl = segmentUrls.get(i);
-                    InputStream segIs = openSegmentStream(segUrl);
-                    int read;
-                    while ((read = segIs.read(buffer)) > 0) {
-                        fos.write(buffer, 0, read);
+                    try (InputStream segIs = openSegmentStream(segUrl)) {
+                        int read;
+                        while ((read = segIs.read(buffer)) > 0) {
+                            fos.write(buffer, 0, read);
+                        }
                     }
-                    segIs.close();
 
                     int progress = (int) (((i + 1) / (float) totalSegments) * 100);
                     if (callback != null) {

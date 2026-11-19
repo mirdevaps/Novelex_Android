@@ -71,6 +71,9 @@ public class MainActivity extends AppCompatActivity {
     private boolean activityResumed;
     private boolean mobileAdsInitialized;
     private final List<Drama> displayedDramas = new ArrayList<>();
+    private final Handler searchDebounceHandler = new Handler(Looper.getMainLooper());
+    private Runnable searchDebounceRunnable;
+    private int searchGenerationCounter = 0;
 
     private static final String MAIN_NATIVE_AD_UNIT_ID = "ca-app-pub-3437419183521595/9373166289";
 
@@ -228,10 +231,12 @@ public class MainActivity extends AppCompatActivity {
     private void setupBottomNavigation() {
         topMenuScroll = null;
         findViewById(R.id.navHome).setOnClickListener(v -> {
-            Intent home = new Intent(this, HomeActivity.class);
-            home.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            startActivity(home);
-            finish();
+            CatalogInterstitial.getInstance().showOnNavigation(this, () -> {
+                Intent home = new Intent(this, HomeActivity.class);
+                home.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(home);
+                finish();
+            });
         });
         bottomNavItems = new View[]{
             findViewById(R.id.navMyList), findViewById(R.id.navContinue)
@@ -251,6 +256,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void selectBottomNavigation(int tab) {
+        if (selectedBottomNav != tab) {
+            CatalogInterstitial.getInstance().showOnNavigation(this, () -> doSelectBottomNavigation(tab));
+        } else {
+            doSelectBottomNavigation(tab);
+        }
+    }
+
+    private void doSelectBottomNavigation(int tab) {
         selectedBottomNav = tab;
         currentPivotIndex = showingDoramas ? 1 : 0;
         updateCatalogTabs();
@@ -617,10 +630,15 @@ public class MainActivity extends AppCompatActivity {
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                String q = s.toString();
+                if (searchDebounceRunnable != null) {
+                    searchDebounceHandler.removeCallbacks(searchDebounceRunnable);
+                }
+                final String q = s != null ? s.toString() : "";
+                final int generation = ++searchGenerationCounter;
                 final boolean doramaCatalog = showingDoramas;
                 final int bottomTab = selectedBottomNav;
-                new Thread(() -> {
+
+                searchDebounceRunnable = () -> new Thread(() -> {
                     List<Drama> results;
                     if (bottomTab == 1 || bottomTab == 2) {
                         results = dbHelper.getAllDramas(-1, 0);
@@ -631,6 +649,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                     applyBottomNavigationFilter(results, bottomTab);
                     runOnUiThread(() -> {
+                        if (generation != searchGenerationCounter || isFinishing() || isDestroyed()) return;
                         if (showingDoramas != doramaCatalog || selectedBottomNav != bottomTab) return;
                         displayedDramas.clear();
                         displayedDramas.addAll(results);
@@ -638,7 +657,9 @@ public class MainActivity extends AppCompatActivity {
                         updateCollectionHeader(results, bottomTab, doramaCatalog);
                         mainAdapter.notifyDataSetChanged();
                     });
-                }).start();
+                }, "catalog-search-thread").start();
+
+                searchDebounceHandler.postDelayed(searchDebounceRunnable, 250);
             }
             @Override
             public void afterTextChanged(Editable s) {}

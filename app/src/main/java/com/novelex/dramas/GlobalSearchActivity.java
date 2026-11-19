@@ -25,6 +25,7 @@ public class GlobalSearchActivity extends AppCompatActivity {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private int searchGeneration;
     private boolean resumed, adsReady;
+    private List<Drama> allDramasCache;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state); setContentView(R.layout.activity_global_search);
@@ -58,9 +59,12 @@ public class GlobalSearchActivity extends AppCompatActivity {
         String query = normalize(raw);
         if (query.isEmpty()) { results.clear(); adapter.setSectionContent(getString(R.string.search_all), getString(R.string.search_start)); adapter.notifyDataSetChanged(); return; }
         new Thread(() -> {
+            if (allDramasCache == null) {
+                allDramasCache = DatabaseHelper.getInstance(this).getAllDramas(-1, 0);
+            }
             List<Scored> scored = new ArrayList<>();
             String[] terms = query.split("\\s+");
-            for (Drama drama : DatabaseHelper.getInstance(this).getAllDramas(-1, 0)) {
+            for (Drama drama : allDramasCache) {
                 String title = normalize(drama.getTitle());
                 String genre = normalize(drama.getGenre());
                 String synopsis = normalize(drama.getSynopsis());

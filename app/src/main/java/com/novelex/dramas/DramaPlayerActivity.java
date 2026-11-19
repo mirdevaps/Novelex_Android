@@ -94,12 +94,10 @@ public class DramaPlayerActivity extends AppCompatActivity {
     private FirebaseFirestore firestore;
     private boolean rewardedScreenActive;
     private RewardedAd rewardedAd;
-    private NativeAd episodeListNativeAd;
     private boolean isLoadingAd = false;
     private boolean isDownloading = false;
 
     private static final String REWARDED_AD_UNIT_ID = "ca-app-pub-3437419183521595/1686247958";
-    private static final String NATIVE_AD_UNIT_ID = "ca-app-pub-3437419183521595/9373166289";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -140,6 +138,13 @@ public class DramaPlayerActivity extends AppCompatActivity {
         setupActions();
         setupPlayerGestures();
         syncWithFirestore();
+
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                exitPlayerWithAd();
+            }
+        });
 
         int initialEpisodeIndex = getIntent().getIntExtra("start_episode_index", 0);
         if (initialEpisodeIndex < 0 || initialEpisodeIndex >= currentDrama.getEpisodes().size()) {
@@ -254,8 +259,15 @@ public class DramaPlayerActivity extends AppCompatActivity {
             && !synopsis.equals("Sinopse em breve...");
         playerDramaSynopsis.setText(currentDrama.getGenre() + (hasSynopsis ? " · " + synopsis : ""));
 
-        btnBack.setOnClickListener(v -> finish());
+        btnBack.setOnClickListener(v -> exitPlayerWithAd());
         imgPlayPauseOverlay.setOnClickListener(v -> togglePlayPause());
+    }
+
+    private void exitPlayerWithAd() {
+        if (exoPlayer != null) {
+            exoPlayer.pause();
+        }
+        CatalogInterstitial.getInstance().showOnNavigation(this, this::finish);
     }
 
     private void setupExoPlayer() {
@@ -781,103 +793,6 @@ public class DramaPlayerActivity extends AppCompatActivity {
         episodeListLauncher.launch(intent);
     }
 
-    private void loadEpisodeListNativeAd(FrameLayout adContainer) {
-        adContainer.setVisibility(View.VISIBLE);
-        AdLoader loader = new AdLoader.Builder(this, NATIVE_AD_UNIT_ID)
-            .forNativeAd(nativeAd -> {
-                if (isFinishing() || isDestroyed() || !adContainer.isAttachedToWindow()) {
-                    nativeAd.destroy();
-                    return;
-                }
-                if (episodeListNativeAd != null) episodeListNativeAd.destroy();
-                episodeListNativeAd = nativeAd;
-                NativeAdView nativeAdView = createNativeAdView(nativeAd);
-                adContainer.removeAllViews();
-                adContainer.addView(nativeAdView, new FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.WRAP_CONTENT));
-            })
-            .withAdListener(new AdListener() {
-                @Override
-                public void onAdFailedToLoad(@NonNull LoadAdError error) {
-                    android.util.Log.w("NovelexAds", "DramaPlayerActivity.java load: " + error);
-                    adContainer.removeAllViews();
-                    adContainer.setVisibility(View.GONE);
-                }
-            })
-            .build();
-        loader.loadAd(new AdRequest.Builder().build());
-    }
-
-    private NativeAdView createNativeAdView(NativeAd nativeAd) {
-        NativeAdView adView = new NativeAdView(this);
-        LinearLayout content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        int padding = dp(14);
-        content.setPadding(padding, padding, padding, padding);
-
-        TextView adLabel = new TextView(this);
-        adLabel.setText(getString(R.string.ui_14));
-        adLabel.setTextColor(getColor(R.color.novelex_primary_pink));
-        adLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
-        adLabel.setTypeface(null, android.graphics.Typeface.BOLD);
-        content.addView(adLabel);
-
-        TextView headline = new TextView(this);
-        headline.setTextColor(getColor(R.color.novelex_text_white));
-        headline.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
-        headline.setTypeface(null, android.graphics.Typeface.BOLD);
-        LinearLayout.LayoutParams headlineParams = new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        headlineParams.topMargin = dp(5);
-        content.addView(headline, headlineParams);
-
-        TextView body = new TextView(this);
-        body.setTextColor(getColor(R.color.novelex_text_muted));
-        body.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-        LinearLayout.LayoutParams bodyParams = new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        bodyParams.topMargin = dp(4);
-        content.addView(body, bodyParams);
-
-        TextView callToAction = new TextView(this);
-        callToAction.setTextColor(Color.WHITE);
-        callToAction.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-        callToAction.setTypeface(null, android.graphics.Typeface.BOLD);
-        callToAction.setGravity(Gravity.CENTER);
-        callToAction.setBackgroundResource(R.drawable.bg_pink_button);
-        callToAction.setPadding(dp(14), dp(9), dp(14), dp(9));
-        LinearLayout.LayoutParams actionParams = new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        actionParams.topMargin = dp(10);
-        content.addView(callToAction, actionParams);
-
-        headline.setText(nativeAd.getHeadline());
-        adView.setHeadlineView(headline);
-        if (nativeAd.getBody() != null) {
-            body.setText(nativeAd.getBody());
-            adView.setBodyView(body);
-        } else {
-            body.setVisibility(View.GONE);
-        }
-        if (nativeAd.getCallToAction() != null) {
-            callToAction.setText(nativeAd.getCallToAction());
-            adView.setCallToActionView(callToAction);
-        } else {
-            callToAction.setVisibility(View.GONE);
-        }
-
-        if (nativeAd.getMediaContent() != null) {
-            com.google.android.gms.ads.nativead.MediaView media = new com.google.android.gms.ads.nativead.MediaView(this);
-            content.addView(media, 1, new LinearLayout.LayoutParams(-1, dp(140)));
-            adView.setMediaView(media);
-            media.setMediaContent(nativeAd.getMediaContent());
-        }
-        adView.addView(content);
-        adView.setNativeAd(nativeAd);
-        return adView;
-    }
-
     private int dp(int value) {
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
@@ -903,10 +818,6 @@ public class DramaPlayerActivity extends AppCompatActivity {
         if (likedStateListener != null) likedStateListener.remove();
         super.onDestroy();
         rewardedAd = null;
-        if (episodeListNativeAd != null) {
-            episodeListNativeAd.destroy();
-            episodeListNativeAd = null;
-        }
         if (exoPlayer != null) {
             exoPlayer.release();
             exoPlayer = null;

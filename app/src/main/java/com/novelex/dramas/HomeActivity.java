@@ -74,12 +74,23 @@ public class HomeActivity extends AppCompatActivity {
         releasesList.setAdapter(releasesAdapter);
         if (BuildConfig.DEBUG) com.google.android.gms.ads.MobileAds.setRequestConfiguration(new com.google.android.gms.ads.RequestConfiguration.Builder().setTestDeviceIds(Collections.singletonList("C25AC9B220BD3A44921ABFD2AEACBED7")).build());
         com.google.android.gms.ads.MobileAds.initialize(this, status -> { adsReady = true; if (resumed) loadNativeAd(0); });
+        CatalogInterstitial.getInstance().preload(this);
     }
     private void openCatalog(boolean doramas) {
-        startActivity(new Intent(this, MainActivity.class).putExtra("open_doramas", doramas));
+        CatalogInterstitial.getInstance().showOnNavigation(this, () -> {
+            startActivity(new Intent(this, MainActivity.class).putExtra("open_doramas", doramas));
+        });
     }
-    private void openCatalogTab(int tab) { startActivity(new Intent(this, MainActivity.class).putExtra("open_bottom_tab", tab)); }
-    private void openCategory(String category) { startActivity(new Intent(this, MainActivity.class).putExtra("open_category", category)); }
+    private void openCatalogTab(int tab) {
+        CatalogInterstitial.getInstance().showOnNavigation(this, () -> {
+            startActivity(new Intent(this, MainActivity.class).putExtra("open_bottom_tab", tab));
+        });
+    }
+    private void openCategory(String category) {
+        CatalogInterstitial.getInstance().showOnNavigation(this, () -> {
+            startActivity(new Intent(this, MainActivity.class).putExtra("open_category", category));
+        });
+    }
     private void loadNativeAd(int slot) {
         if (!resumed || !adsReady || isFinishing() || isDestroyed() || loadingSlots.contains(slot) || pendingAds.containsKey(slot)) return;
         if (nativeAds.containsKey(slot) && !impressedSlots.contains(slot)) return;

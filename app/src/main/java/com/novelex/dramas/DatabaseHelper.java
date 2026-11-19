@@ -58,10 +58,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             }
         }
         if (!dbFile.exists()) {
-            dbFile.getParentFile().mkdirs();
-            try (InputStream is = context.getAssets().open(DB_NAME);
-                 OutputStream os = new FileOutputStream(dbFile)) {
-                byte[] buffer = new byte[8192];
+            File parent = dbFile.getParentFile();
+            if (parent != null) parent.mkdirs();
+            try (InputStream is = new java.io.BufferedInputStream(context.getAssets().open(DB_NAME));
+                 OutputStream os = new java.io.BufferedOutputStream(new FileOutputStream(dbFile))) {
+                byte[] buffer = new byte[65536];
                 int length;
                 while ((length = is.read(buffer)) > 0) {
                     os.write(buffer, 0, length);
