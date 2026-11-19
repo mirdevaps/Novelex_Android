@@ -31,7 +31,7 @@ final class CatalogInterstitial {
         long age = elapsed + SystemClock.elapsedRealtime() - started;
         if (age >= 110_000 && ad == null && !loading) {
             loading = true;
-            InterstitialAd.load(activity, "ca-app-pub-3999190888486548/9584576399",
+            InterstitialAd.load(activity, "ca-app-pub-3437419183521595/4855995915",
                 new AdRequest.Builder().build(), new InterstitialAdLoadCallback() {
                     @Override public void onAdLoaded(@NonNull InterstitialAd loaded) {
                         loading = false; ad = loaded;

@@ -98,8 +98,8 @@ public class DramaPlayerActivity extends AppCompatActivity {
     private boolean isLoadingAd = false;
     private boolean isDownloading = false;
 
-    private static final String REWARDED_AD_UNIT_ID = "ca-app-pub-3999190888486548/9035067006";
-    private static final String NATIVE_AD_UNIT_ID = "ca-app-pub-3999190888486548/4603712451";
+    private static final String REWARDED_AD_UNIT_ID = "ca-app-pub-3437419183521595/1686247958";
+    private static final String NATIVE_AD_UNIT_ID = "ca-app-pub-3437419183521595/9373166289";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

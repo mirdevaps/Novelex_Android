@@ -10,7 +10,7 @@ import com.google.firebase.firestore.*;
 import java.util.*;
 
 public class HomeActivity extends AppCompatActivity {
-    private static final String NATIVE_AD_UNIT = "ca-app-pub-3999190888486548/4603712451";
+    private static final String NATIVE_AD_UNIT = "ca-app-pub-3437419183521595/9373166289";
     private final List<Drama> titles = new ArrayList<>();
     private final List<Drama> highlights = new ArrayList<>();
     private final List<Drama> releases = new ArrayList<>();

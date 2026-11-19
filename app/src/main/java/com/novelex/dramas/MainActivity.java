@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean mobileAdsInitialized;
     private final List<Drama> displayedDramas = new ArrayList<>();
 
-    private static final String MAIN_NATIVE_AD_UNIT_ID = "ca-app-pub-3999190888486548/4603712451";
+    private static final String MAIN_NATIVE_AD_UNIT_ID = "ca-app-pub-3437419183521595/9373166289";
 
     // "Dublados" adicionado em destaque logo após "Todos"
     private final List<String> shortDramaCategories = new ArrayList<>(Arrays.asList(
