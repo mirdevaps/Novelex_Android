@@ -262,30 +262,20 @@
         android:orientation="horizontal"
         android:paddingHorizontal="8dp">
 
-        <LinearLayout
+        <TextView
+            android:id="@+id/homeNavHome"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center"
-            android:orientation="vertical"
-            android:paddingVertical="6dp">
-
-            <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:contentDescription=""
-                android:src="@drawable/ic_novelex_home"
-                android:tint="@color/novelex_primary_pink" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
-                android:text="@string/home_label"
-                android:textColor="@color/novelex_primary_pink"
-                android:textSize="10sp"
-                android:textStyle="bold" />
-        </LinearLayout>
+            android:drawableTop="@drawable/ic_novelex_home"
+            android:drawablePadding="3dp"
+            android:drawableTint="@color/novelex_primary_pink"
+            android:paddingVertical="6dp"
+            android:text="@string/home_label"
+            android:textColor="@color/novelex_primary_pink"
+            android:textSize="10sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/homeNavShorts"

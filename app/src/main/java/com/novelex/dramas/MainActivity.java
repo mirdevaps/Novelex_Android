@@ -671,16 +671,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void openDramaPlayer(Drama drama) {
-        if (drama.getId().startsWith("dorama_")) {
-            new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-                .setTitle(drama.getTitle())
-                .setMessage("Categorias: " + drama.getGenre() + "\nÁudio: " + drama.getAudio()
-                    + "\n\nSinopse\n" + drama.getSynopsis())
-                .setPositiveButton(getString(R.string.ui_39), (dialog, which) -> startDramaPlayback(drama))
-                .setNegativeButton(getString(R.string.ui_40), null)
-                .show();
-            return;
-        }
         startDramaPlayback(drama);
     }
 

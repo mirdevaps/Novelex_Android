@@ -85,8 +85,9 @@ public class HomeActivity extends AppCompatActivity {
         releasesGrid.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() { @Override public int getSpanSize(int position) { return releasesAdapter.isFullSpan(position) ? columns : 1; }});
         releasesList.setAdapter(releasesAdapter);
         if (BuildConfig.DEBUG) com.google.android.gms.ads.MobileAds.setRequestConfiguration(new com.google.android.gms.ads.RequestConfiguration.Builder().setTestDeviceIds(Collections.singletonList("C25AC9B220BD3A44921ABFD2AEACBED7")).build());
-        com.google.android.gms.ads.MobileAds.initialize(this, status -> { adsReady = true; if (resumed) loadNativeAd(0); });
+        com.google.android.gms.ads.MobileAds.initialize(this, status -> {});
         CatalogInterstitial.getInstance().preload(this);
+        loadNativeAd(0);
         loadLocalCatalogInstant();
     }
 
@@ -186,36 +187,28 @@ public class HomeActivity extends AppCompatActivity {
         });
     }
     private void loadNativeAd(int slot) {
-        if (!resumed || !adsReady || isFinishing() || isDestroyed() || loadingSlots.contains(slot) || pendingAds.containsKey(slot)) return;
-        if (nativeAds.containsKey(slot) && !impressedSlots.contains(slot)) return;
+        if (isFinishing() || isDestroyed() || loadingSlots.contains(slot)) return;
         loadingSlots.add(slot);
         final com.google.android.gms.ads.nativead.NativeAd[] loaded = new com.google.android.gms.ads.nativead.NativeAd[1];
         new com.google.android.gms.ads.AdLoader.Builder(this, NATIVE_AD_UNIT).forNativeAd(ad -> {
             loadingSlots.remove(slot); loaded[0] = ad;
-            if (!resumed || isFinishing() || isDestroyed()) { ad.destroy(); return; }
-            pendingAds.put(slot, ad);
-            long delay = Math.max(0, impressionTimes.getOrDefault(slot, 0L) + 10_000L - android.os.SystemClock.elapsedRealtime());
-            sliderHandler.postDelayed(() -> displayPendingAd(slot, ad), delay);
+            if (isFinishing() || isDestroyed()) { ad.destroy(); return; }
+            com.google.android.gms.ads.nativead.NativeAd old = nativeAds.put(slot, ad);
+            bindHomeNativeAd(ad); if (old != null && old != ad) old.destroy();
         }).withAdListener(new com.google.android.gms.ads.AdListener() {
             @Override public void onAdImpression() {
                 if (loaded[0] == null || loaded[0] != nativeAds.get(slot) || !impressedSlots.add(slot)) return;
                 impressionTimes.put(slot, android.os.SystemClock.elapsedRealtime());
-                loadNativeAd(slot);
             }
             @Override public void onAdFailedToLoad(@androidx.annotation.NonNull com.google.android.gms.ads.LoadAdError error) {
-                loadingSlots.remove(slot); android.util.Log.w("NovelexAds", "Home native: " + error);
-                if (resumed) sliderHandler.postDelayed(() -> loadNativeAd(slot), 60_000L);
+                loadingSlots.remove(slot); android.util.Log.w("NovelexAds", "Home native: " + error.getMessage());
+                sliderHandler.postDelayed(() -> loadNativeAd(slot), 30_000L);
             }
         }).build().loadAd(new com.google.android.gms.ads.AdRequest.Builder().build());
     }
-    private void displayPendingAd(int slot, com.google.android.gms.ads.nativead.NativeAd ad) {
-        if (!resumed || pendingAds.get(slot) != ad || isFinishing() || isDestroyed()) return;
-        pendingAds.remove(slot); impressedSlots.remove(slot); impressionTimes.remove(slot);
-        com.google.android.gms.ads.nativead.NativeAd old = nativeAds.put(slot, ad);
-        bindHomeNativeAd(ad); if (old != null && old != ad) old.destroy();
-    }
     private void bindHomeNativeAd(com.google.android.gms.ads.nativead.NativeAd ad) {
         com.google.android.gms.ads.nativead.NativeAdView view = findViewById(R.id.homeNativeAd);
+        if (view == null) return;
         android.widget.TextView headline = view.findViewById(R.id.nativeAdHeadline);
         android.widget.TextView body = view.findViewById(R.id.nativeAdBody);
         android.widget.TextView action = view.findViewById(R.id.nativeAdCallToAction);
@@ -325,17 +318,13 @@ public class HomeActivity extends AppCompatActivity {
     @Override protected void onResume() {
         super.onResume(); resumed = true;
         loadContinueWatching();
-        loadNativeAd(0);
-        for (Map.Entry<Integer, com.google.android.gms.ads.nativead.NativeAd> entry : new HashMap<>(pendingAds).entrySet()) {
-            int slot = entry.getKey();
-            long delay = Math.max(0L, impressionTimes.getOrDefault(slot, 0L) + 10_000L - android.os.SystemClock.elapsedRealtime());
-            sliderHandler.postDelayed(() -> displayPendingAd(slot, entry.getValue()), delay);
+        if (!nativeAds.containsKey(0)) {
+            loadNativeAd(0);
         }
     }
     @Override protected void onDestroy() {
         sliderHandler.removeCallbacksAndMessages(null);
-        for (com.google.android.gms.ads.nativead.NativeAd ad : pendingAds.values()) ad.destroy();
         for (com.google.android.gms.ads.nativead.NativeAd ad : nativeAds.values()) ad.destroy();
-        pendingAds.clear(); nativeAds.clear(); super.onDestroy();
+        nativeAds.clear(); super.onDestroy();
     }
 }
