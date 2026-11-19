@@ -76,6 +76,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     @Override
+    public void onConfigure(SQLiteDatabase db) {
+        super.onConfigure(db);
+        db.enableWriteAheadLogging();
+    }
+
+    @Override
     public void onOpen(SQLiteDatabase db) {
         super.onOpen(db);
         for (String[] column : new String[][]{{"dramas", "year", "INTEGER DEFAULT 0"}, {"episodes", "thumbnail", "TEXT"}}) {

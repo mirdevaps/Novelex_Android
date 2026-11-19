@@ -76,6 +76,63 @@ public class HomeActivity extends AppCompatActivity {
         if (BuildConfig.DEBUG) com.google.android.gms.ads.MobileAds.setRequestConfiguration(new com.google.android.gms.ads.RequestConfiguration.Builder().setTestDeviceIds(Collections.singletonList("C25AC9B220BD3A44921ABFD2AEACBED7")).build());
         com.google.android.gms.ads.MobileAds.initialize(this, status -> { adsReady = true; if (resumed) loadNativeAd(0); });
         CatalogInterstitial.getInstance().preload(this);
+        loadLocalCatalogInstant();
+    }
+
+    private void loadLocalCatalogInstant() {
+        new Thread(() -> {
+            List<Drama> fullCatalog = DatabaseHelper.getInstance(this).getAllDramas(-1, 0);
+            if (fullCatalog.isEmpty()) return;
+
+            List<Drama> featured = new ArrayList<>();
+            Set<String> featuredIds = new HashSet<>();
+            for (Drama d : fullCatalog) {
+                if (d.getBanner() != null && !d.getBanner().isEmpty()) {
+                    featured.add(d);
+                    featuredIds.add(d.getId());
+                    if (featured.size() == 8) break;
+                }
+            }
+
+            List<Drama> sorted = new ArrayList<>(fullCatalog);
+            sorted.sort((a, b) -> {
+                int year = Integer.compare(b.getYear(), a.getYear());
+                if (year != 0) return year;
+                int episodes = Integer.compare(b.getEpisodesCount(), a.getEpisodesCount());
+                return episodes != 0 ? episodes : a.getTitle().compareToIgnoreCase(b.getTitle());
+            });
+
+            List<Drama> latest = new ArrayList<>();
+            for (Drama d : sorted) {
+                if (d.getPoster() != null && !d.getPoster().isEmpty()) latest.add(d);
+                if (latest.size() == 16) break;
+            }
+
+            List<Drama> initialPopular = new ArrayList<>();
+            for (Drama d : sorted) {
+                if (d.getPoster() != null && !d.getPoster().isEmpty()) initialPopular.add(d);
+                if (initialPopular.size() == 16) break;
+            }
+
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                if (highlights.isEmpty() && !featured.isEmpty()) {
+                    highlights.addAll(featured);
+                    highlightAdapter.notifyDataSetChanged();
+                    highlightPager.setVisibility(View.VISIBLE);
+                    updateDots(0);
+                }
+                if (releases.isEmpty() && !latest.isEmpty()) {
+                    releases.addAll(latest);
+                    releasesAdapter.notifyDataSetChanged();
+                }
+                if (titles.isEmpty() && !initialPopular.isEmpty()) {
+                    titles.addAll(initialPopular);
+                    adapter.setSectionContent(getString(R.string.home_popular), getString(R.string.home_ranking_info));
+                    adapter.notifyDataSetChanged();
+                }
+            });
+        }, "home-instant-local").start();
     }
     private void openCatalog(boolean doramas) {
         CatalogInterstitial.getInstance().showOnNavigation(this, () -> {

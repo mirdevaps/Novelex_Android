@@ -112,24 +112,28 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         loadInitialData();
-        new Thread(() -> {
-            try {
-                int count = ReelsCatalogSync.sync(dbHelper);
-                java.util.List<String> years = dbHelper.getShortDramaYears();
-                android.util.Log.i("NovelexCatalog", "API catalog synchronized: " + count);
-                runOnUiThread(() -> {
-                    if (isFinishing() || isDestroyed()) return;
-                    shortDramaCategories.removeIf(c -> c.matches("[0-9]{4}"));
-                    shortDramaCategories.addAll(years);
-                    if (!showingDoramas && selectedBottomNav == 0 && searchEditText.length() == 0) {
-                        mainAdapter.setCategories(shortDramaCategories);
-                        loadCatalog();
-                    }
-                });
-            } catch (Exception error) {
-                android.util.Log.w("NovelexCatalog", "Using cached catalog; API sync failed", error);
-            }
-        }, "reels-catalog-sync").start();
+        long lastSync = prefs.getLong("last_reels_catalog_sync", 0L);
+        if (System.currentTimeMillis() - lastSync > 6 * 60 * 60 * 1000L) {
+            new Thread(() -> {
+                try {
+                    int count = ReelsCatalogSync.sync(dbHelper);
+                    prefs.edit().putLong("last_reels_catalog_sync", System.currentTimeMillis()).apply();
+                    java.util.List<String> years = dbHelper.getShortDramaYears();
+                    android.util.Log.i("NovelexCatalog", "API catalog synchronized: " + count);
+                    runOnUiThread(() -> {
+                        if (isFinishing() || isDestroyed()) return;
+                        shortDramaCategories.removeIf(c -> c.matches("[0-9]{4}"));
+                        shortDramaCategories.addAll(years);
+                        if (!showingDoramas && selectedBottomNav == 0 && searchEditText.length() == 0) {
+                            mainAdapter.setCategories(shortDramaCategories);
+                            loadCatalog();
+                        }
+                    });
+                } catch (Exception error) {
+                    android.util.Log.w("NovelexCatalog", "Using cached catalog; API sync failed", error);
+                }
+            }, "reels-catalog-sync").start();
+        }
         setupSearch();
         if (getIntent().getBooleanExtra("open_doramas", false)) switchCatalog(true);
         int requestedTab = getIntent().getIntExtra("open_bottom_tab", 0);
