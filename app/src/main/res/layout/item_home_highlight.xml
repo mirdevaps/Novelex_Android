@@ -1,1 +1,86 @@
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_marginHorizontal="5dp" app:cardCornerRadius="22dp" app:cardElevation="0dp" app:strokeWidth="1dp" app:strokeColor="@color/novelex_bg_card_hover"><FrameLayout android:layout_width="match_parent" android:layout_height="match_parent"><ImageView android:id="@+id/highlightImage" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="centerCrop"/><View android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/bg_home_highlight_gradient"/><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_gravity="bottom" android:orientation="vertical" android:padding="18dp"><TextView android:id="@+id/highlightTag" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/novelex_primary_pink" android:textSize="11sp" android:textStyle="bold"/><TextView android:id="@+id/highlightTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:maxLines="2" android:ellipsize="end" android:textColor="@android:color/white" android:textSize="22sp" android:textStyle="bold"/><TextView android:id="@+id/highlightMeta" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:maxLines="1" android:ellipsize="end" android:textColor="#D9FFFFFF" android:textSize="12sp"/></LinearLayout></FrameLayout></com.google.android.material.card.MaterialCardView>
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_marginHorizontal="6dp"
+    app:cardBackgroundColor="@color/novelex_bg_card"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="0dp"
+    app:strokeColor="#2E2840"
+    app:strokeWidth="1.2dp">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ImageView
+            android:id="@+id/highlightImage"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_home_highlight_gradient" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:orientation="vertical"
+            android:paddingHorizontal="18dp"
+            android:paddingBottom="16dp">
+
+            <TextView
+                android:id="@+id/highlightTag"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_topbar_action"
+                android:letterSpacing="0.06"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="3dp"
+                android:textColor="@color/novelex_primary_pink"
+                android:textSize="9.5sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/highlightTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textColor="@color/novelex_text_white"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/highlightMeta"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/novelex_text_muted"
+                    android:textSize="11.5sp" />
+
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:background="@drawable/bg_circle_translucent"
+                    android:padding="6dp"
+                    android:src="@drawable/ic_novelex_play"
+                    android:tint="@color/novelex_primary_pink" />
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
+</com.google.android.material.card.MaterialCardView>

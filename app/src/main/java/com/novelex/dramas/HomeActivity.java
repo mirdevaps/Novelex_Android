@@ -14,6 +14,10 @@ public class HomeActivity extends AppCompatActivity {
     private final List<Drama> titles = new ArrayList<>();
     private final List<Drama> highlights = new ArrayList<>();
     private final List<Drama> releases = new ArrayList<>();
+    private final List<Drama> continueItems = new ArrayList<>();
+    private HomeContinueAdapter continueAdapter;
+    private View continueSection;
+    private RecyclerView continueList;
     private MainCombinedAdapter adapter;
     private MainCombinedAdapter releasesAdapter;
     private HomeHighlightAdapter highlightAdapter;
@@ -54,6 +58,13 @@ public class HomeActivity extends AppCompatActivity {
         highlightPager.registerOnPageChangeCallback(new androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback() {
             @Override public void onPageSelected(int position) { updateDots(position); sliderHandler.removeCallbacks(advanceSlide); sliderHandler.postDelayed(advanceSlide, 5000); }
         });
+        continueSection = findViewById(R.id.homeContinueSection);
+        continueList = findViewById(R.id.homeContinueList);
+        continueList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        continueAdapter = new HomeContinueAdapter(this, continueItems, getSharedPreferences("novelex_prefs", MODE_PRIVATE), this::openDrama);
+        continueList.setAdapter(continueAdapter);
+        View continueSeeAll = findViewById(R.id.homeContinueSeeAll);
+        if (continueSeeAll != null) continueSeeAll.setOnClickListener(v -> openCatalogTab(2));
         RecyclerView list = findViewById(R.id.homeRanking);
         RecyclerView releasesList = findViewById(R.id.homeReleases);
         int columns = getResources().getInteger(R.integer.catalog_columns);
@@ -132,7 +143,32 @@ public class HomeActivity extends AppCompatActivity {
                     adapter.notifyDataSetChanged();
                 }
             });
+            loadContinueWatching();
         }, "home-instant-local").start();
+    }
+
+    private void loadContinueWatching() {
+        new Thread(() -> {
+            android.content.SharedPreferences prefs = getSharedPreferences("novelex_prefs", MODE_PRIVATE);
+            List<Drama> all = DatabaseHelper.getInstance(this).getAllDramas(-1, 0);
+            List<Drama> watched = new ArrayList<>();
+            for (Drama d : all) {
+                if (prefs.getLong("last_watched_" + d.getId(), 0L) > 0L) {
+                    watched.add(d);
+                }
+            }
+            watched.sort((a, b) -> Long.compare(
+                prefs.getLong("last_watched_" + b.getId(), 0L),
+                prefs.getLong("last_watched_" + a.getId(), 0L)
+            ));
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                continueItems.clear();
+                continueItems.addAll(watched);
+                continueAdapter.notifyDataSetChanged();
+                continueSection.setVisibility(continueItems.isEmpty() ? View.GONE : View.VISIBLE);
+            });
+        }, "home-continue-load").start();
     }
     private void openCatalog(boolean doramas) {
         CatalogInterstitial.getInstance().showOnNavigation(this, () -> {
@@ -288,6 +324,7 @@ public class HomeActivity extends AppCompatActivity {
     }
     @Override protected void onResume() {
         super.onResume(); resumed = true;
+        loadContinueWatching();
         loadNativeAd(0);
         for (Map.Entry<Integer, com.google.android.gms.ads.nativead.NativeAd> entry : new HashMap<>(pendingAds).entrySet()) {
             int slot = entry.getKey();

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="132dp"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="8dp"
+    android:layout_marginEnd="8dp"
+    android:layout_marginTop="4dp"
+    android:layout_marginBottom="8dp"
+    app:cardBackgroundColor="@color/novelex_bg_card"
+    app:cardCornerRadius="14dp"
+    app:cardElevation="2dp"
+    app:strokeColor="@color/novelex_outline"
+    app:strokeWidth="1dp"
+    android:foreground="?attr/selectableItemBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="176dp">
+
+            <ImageView
+                android:id="@+id/continuePoster"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:background="@color/novelex_bg_card_hover" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_alignParentBottom="true"
+                android:background="@drawable/bg_home_highlight_gradient" />
+
+            <!-- Episode pill badge -->
+            <TextView
+                android:id="@+id/continueEpisodeBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:layout_alignParentEnd="true"
+                android:layout_margin="7dp"
+                android:background="@drawable/bg_topbar_action"
+                android:paddingHorizontal="7dp"
+                android:paddingVertical="3dp"
+                android:text="EP 1"
+                android:textColor="@color/novelex_primary_pink"
+                android:textSize="9sp"
+                android:textStyle="bold" />
+
+            <!-- Play circular icon overlay -->
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_centerInParent="true"
+                android:background="@drawable/bg_circle_translucent"
+                android:padding="8dp"
+                android:src="@drawable/ic_novelex_play"
+                app:tint="@color/novelex_text_white" />
+
+            <!-- Progress bar indicating episode completion -->
+            <ProgressBar
+                android:id="@+id/continueProgress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="3.5dp"
+                android:layout_alignParentBottom="true"
+                android:max="100"
+                android:progress="25"
+                android:progressTint="@color/novelex_primary_pink"
+                android:progressBackgroundTint="#55FFFFFF" />
+
+        </RelativeLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="8dp">
+
+            <TextView
+                android:id="@+id/continueTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textColor="@color/novelex_text_white"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:text="Título" />
+
+            <TextView
+                android:id="@+id/continueSubtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textColor="@color/novelex_text_muted"
+                android:textSize="10sp"
+                android:text="Continuar EP 1" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

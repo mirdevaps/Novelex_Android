@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="novelex_bg_dark">#110F17</color>
-    <color name="novelex_bg_card">#1D1A24</color>
-    <color name="novelex_bg_card_hover">#29242F</color>
-    <color name="novelex_bg_sheet">#19161F</color>
-    <color name="novelex_primary_pink">#EA73B4</color>
-    <color name="novelex_primary_pink_light">#FF9BD0</color>
-    <color name="novelex_primary_purple">#9477E6</color>
-    <color name="novelex_text_white">#FFF8F2</color>
-    <color name="novelex_text_muted">#B8AFBA</color>
-    <color name="novelex_text_hint">#827986</color>
-    <color name="novelex_chip_bg">#29242F</color>
-    <color name="novelex_badge_gold">#F2C36C</color>
-    <color name="novelex_outline">#3B3442</color>
+    <color name="novelex_bg_dark">#0B0A12</color>
+    <color name="novelex_bg_card">#161322</color>
+    <color name="novelex_bg_card_hover">#231D33</color>
+    <color name="novelex_bg_sheet">#13101C</color>
+    <color name="novelex_primary_pink">#FF2E7E</color>
+    <color name="novelex_primary_pink_light">#FF65A3</color>
+    <color name="novelex_primary_purple">#9B51E0</color>
+    <color name="novelex_text_white">#FFFFFF</color>
+    <color name="novelex_text_muted">#ABA2B8</color>
+    <color name="novelex_text_hint">#7A7188</color>
+    <color name="novelex_chip_bg">#231D33</color>
+    <color name="novelex_badge_gold">#FF3377</color>
+    <color name="novelex_outline">#2C253D</color>
     <color name="novelex_scrim">#D9000000</color>
     <color name="novelex_player_white">#FFFFFF</color>
     <color name="novelex_player_muted">#C4BAC7</color>

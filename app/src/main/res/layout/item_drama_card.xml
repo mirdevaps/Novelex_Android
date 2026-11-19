@@ -43,7 +43,7 @@
                 android:paddingEnd="8dp"
                 android:paddingBottom="4dp"
                 android:text="85 EPS"
-                android:textColor="#241711"
+                android:textColor="@color/novelex_primary_pink"
                 android:textSize="9sp"
                 android:textStyle="bold" />
 
