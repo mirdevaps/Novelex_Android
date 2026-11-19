@@ -16,7 +16,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String TAG = "NovelexDB";
     private static final String DB_NAME = "novelex.db";
-    private static final int DB_VERSION = 4;
+    private static final int DB_VERSION = 5;
     private final Context context;
     private final String dbPath;
 
@@ -94,7 +94,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         ensureFrutasDrama(db);
     }
 
+    public synchronized void ensureFrutasDramaSync() {
+        try {
+            SQLiteDatabase db = getWritableDatabase();
+            ensureFrutasDrama(db);
+        } catch (Exception e) {
+            Log.e(TAG, "Erro ao sincronizar Novela das Frutas via ensureFrutasDramaSync", e);
+        }
+    }
+
     private void ensureFrutasDrama(SQLiteDatabase db) {
+        if (db == null || db.isReadOnly()) return;
         Cursor c = null;
         try {
             c = db.rawQuery("SELECT COUNT(*) FROM episodes WHERE drama_id = 'novela_das_frutas'", null);
@@ -107,45 +117,47 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
 
         try (InputStream is = context.getAssets().open("frutas_drama.json")) {
-            byte[] buf = new byte[is.available()];
-            int read = is.read(buf);
-            if (read > 0) {
-                String json = new String(buf, 0, read, "UTF-8");
-                org.json.JSONObject obj = new org.json.JSONObject(json);
-                db.beginTransaction();
-                try {
-                    db.execSQL("INSERT OR REPLACE INTO dramas (id, title, poster, banner, synopsis, genre, audio, ep_count, year) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                        new Object[]{
-                            obj.optString("id", "novela_das_frutas"),
-                            obj.optString("title", "Novela das Frutas"),
-                            obj.optString("poster"),
-                            obj.optString("banner"),
-                            obj.optString("synopsis"),
-                            obj.optString("genre", "Frutas"),
-                            obj.optString("audio", "Dublado"),
-                            obj.optInt("ep_count", 58),
-                            obj.optInt("year", 2026)
-                        });
-                    db.execSQL("DELETE FROM episodes WHERE drama_id = 'novela_das_frutas'");
-                    org.json.JSONArray eps = obj.optJSONArray("episodes");
-                    if (eps != null) {
-                        for (int i = 0; i < eps.length(); i++) {
-                            org.json.JSONObject epObj = eps.getJSONObject(i);
-                            db.execSQL("INSERT INTO episodes (drama_id, number, title, url) VALUES (?, ?, ?, ?)",
-                                new Object[]{
-                                    "novela_das_frutas",
-                                    epObj.optInt("num", i + 1),
-                                    epObj.optString("title"),
-                                    epObj.optString("url")
-                                });
-                        }
-                    }
-                    db.setTransactionSuccessful();
-                } finally {
-                    db.endTransaction();
-                }
-                Log.i(TAG, "Novela das Frutas sincronizada no banco com 58 episódios!");
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            int read;
+            while ((read = is.read(buf)) != -1) {
+                baos.write(buf, 0, read);
             }
+            String json = baos.toString("UTF-8");
+            org.json.JSONObject obj = new org.json.JSONObject(json);
+            db.beginTransaction();
+            try {
+                db.execSQL("INSERT OR REPLACE INTO dramas (id, title, poster, banner, synopsis, genre, audio, ep_count, year) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    new Object[]{
+                        obj.optString("id", "novela_das_frutas"),
+                        obj.optString("title", "Novela das Frutas"),
+                        obj.optString("poster"),
+                        obj.optString("banner"),
+                        obj.optString("synopsis"),
+                        obj.optString("genre", "Frutas"),
+                        obj.optString("audio", "Dublado"),
+                        obj.optInt("ep_count", 58),
+                        obj.optInt("year", 2026)
+                    });
+                db.execSQL("DELETE FROM episodes WHERE drama_id = 'novela_das_frutas'");
+                org.json.JSONArray eps = obj.optJSONArray("episodes");
+                if (eps != null) {
+                    for (int i = 0; i < eps.length(); i++) {
+                        org.json.JSONObject epObj = eps.getJSONObject(i);
+                        db.execSQL("INSERT INTO episodes (drama_id, number, title, url) VALUES (?, ?, ?, ?)",
+                            new Object[]{
+                                "novela_das_frutas",
+                                epObj.optInt("num", i + 1),
+                                epObj.optString("title", "Episódio " + (i + 1)),
+                                epObj.optString("url", epObj.optString("stream_url", ""))
+                            });
+                    }
+                }
+                db.setTransactionSuccessful();
+            } finally {
+                db.endTransaction();
+            }
+            Log.i(TAG, "Novela das Frutas sincronizada no banco com 58 episódios!");
         } catch (Exception e) {
             Log.e(TAG, "Erro ao garantir Novela das Frutas", e);
         }

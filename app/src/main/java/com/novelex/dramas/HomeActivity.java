@@ -93,6 +93,7 @@ public class HomeActivity extends AppCompatActivity {
 
     private void loadLocalCatalogInstant() {
         new Thread(() -> {
+            DatabaseHelper.getInstance(this).ensureFrutasDramaSync();
             List<Drama> fullCatalog = DatabaseHelper.getInstance(this).getAllDramas(-1, 0);
             if (fullCatalog.isEmpty()) return;
 

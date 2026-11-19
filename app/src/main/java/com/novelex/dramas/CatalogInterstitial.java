@@ -102,7 +102,19 @@ public final class CatalogInterstitial {
                 }
             });
 
-            showing.show(activity);
+            activity.runOnUiThread(() -> {
+                if (activity.isFinishing() || activity.isDestroyed()) {
+                    if (onComplete != null) onComplete.run();
+                    return;
+                }
+                try {
+                    showing.show(activity);
+                } catch (Exception e) {
+                    Log.e(TAG, "Erro ao exibir interstitial", e);
+                    preload(activity.getApplicationContext());
+                    if (onComplete != null) onComplete.run();
+                }
+            });
         } else {
             // Ad not ready or within cooldown period -> proceed smoothly without blocking
             preload(activity.getApplicationContext());

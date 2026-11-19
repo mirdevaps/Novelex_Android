@@ -57,6 +57,7 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstan
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView;
 import java.io.File;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class DramaPlayerActivity extends AppCompatActivity {
@@ -112,6 +113,14 @@ public class DramaPlayerActivity extends AppCompatActivity {
         setContentView(R.layout.activity_player);
 
         currentDrama = (Drama) getIntent().getSerializableExtra("drama");
+        if (currentDrama != null && currentDrama.getEpisodes().isEmpty()) {
+            List<Episode> eps = DatabaseHelper.getInstance(this).getEpisodesForDrama(currentDrama.getId());
+            if (eps.isEmpty() && "novela_das_frutas".equals(currentDrama.getId())) {
+                DatabaseHelper.getInstance(this).ensureFrutasDramaSync();
+                eps = DatabaseHelper.getInstance(this).getEpisodesForDrama(currentDrama.getId());
+            }
+            currentDrama.setEpisodes(eps);
+        }
         if (currentDrama == null || currentDrama.getEpisodes().isEmpty()) {
             Toast.makeText(this, getString(R.string.ui_35), Toast.LENGTH_SHORT).show();
             finish();
@@ -272,12 +281,24 @@ public class DramaPlayerActivity extends AppCompatActivity {
                 @Override
                 public void onError(@androidx.annotation.NonNull YouTubePlayer youTubePlayer, @androidx.annotation.NonNull PlayerConstants.PlayerError error) {
                     android.util.Log.w("DramaPlayer", "YouTubePlayer error: " + error + ", activating WebView fallback");
-                    if (youtubePlayerView != null) youtubePlayerView.setVisibility(View.GONE);
-                    if (youtubeWebView != null) youtubeWebView.setVisibility(View.VISIBLE);
+                    runOnUiThread(() -> {
+                        if (youtubePlayerView != null) youtubePlayerView.setVisibility(View.GONE);
+                        if (playerBuffering != null) playerBuffering.setVisibility(View.GONE);
+                        if (youtubeWebView != null && pendingYouTubeVideoId != null) {
+                            youtubeWebView.setVisibility(View.VISIBLE);
+                            String html = "<!DOCTYPE html><html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\"><style>* { margin:0; padding:0; box-sizing:border-box; background:#000; } html,body { width:100%; height:100%; overflow:hidden; display:flex; align-items:center; justify-content:center; } iframe { width:100%; height:100%; border:none; }</style></head><body><iframe width=\"100%\" height=\"100%\" src=\"https://www.youtube-nocookie.com/embed/" + pendingYouTubeVideoId + "?autoplay=1&playsinline=1&controls=1&rel=0&modestbranding=1\" allow=\"autoplay; encrypted-media; fullscreen\" allowfullscreen></iframe></body></html>";
+                            youtubeWebView.loadDataWithBaseURL("https://www.youtube.com", html, "text/html", "UTF-8", null);
+                        }
+                    });
                 }
 
                 @Override
                 public void onStateChange(@androidx.annotation.NonNull YouTubePlayer youTubePlayer, @androidx.annotation.NonNull PlayerConstants.PlayerState state) {
+                    if (state == PlayerConstants.PlayerState.BUFFERING) {
+                        if (playerBuffering != null) playerBuffering.setVisibility(View.VISIBLE);
+                    } else {
+                        if (playerBuffering != null) playerBuffering.setVisibility(View.GONE);
+                    }
                     if (state == PlayerConstants.PlayerState.ENDED) {
                         if (currentEpisodeIndex + 1 < currentDrama.getEpisodes().size()) {
                             playEpisode(currentEpisodeIndex + 1);
@@ -318,6 +339,12 @@ public class DramaPlayerActivity extends AppCompatActivity {
     private void exitPlayerWithAd() {
         if (exoPlayer != null) {
             exoPlayer.pause();
+        }
+        if (activeYouTubePlayer != null) {
+            activeYouTubePlayer.pause();
+        }
+        if (youtubeWebView != null) {
+            youtubeWebView.onPause();
         }
         CatalogInterstitial.getInstance().showOnNavigation(this, this::finish);
     }
@@ -459,21 +486,20 @@ public class DramaPlayerActivity extends AppCompatActivity {
         if (youTubeId != null) {
             singlePlayerView.setVisibility(View.GONE);
             touchOverlay.setVisibility(View.GONE);
-            if (playerBuffering != null) playerBuffering.setVisibility(View.GONE);
+            if (playerBuffering != null) playerBuffering.setVisibility(View.VISIBLE);
             if (exoPlayer != null) exoPlayer.pause();
             imgPlayPauseOverlay.setVisibility(View.GONE);
 
             pendingYouTubeVideoId = youTubeId;
+            if (youtubeWebView != null) {
+                youtubeWebView.setVisibility(View.GONE);
+                youtubeWebView.loadUrl("about:blank");
+            }
             if (youtubePlayerView != null) {
                 youtubePlayerView.setVisibility(View.VISIBLE);
                 if (activeYouTubePlayer != null) {
                     activeYouTubePlayer.loadVideo(youTubeId, 0f);
                 }
-            }
-
-            if (youtubeWebView != null) {
-                String html = "<!DOCTYPE html><html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\"><style>* { margin:0; padding:0; box-sizing:border-box; background:#000; } html,body { width:100%; height:100%; overflow:hidden; display:flex; align-items:center; justify-content:center; } iframe { width:100%; height:100%; border:none; }</style></head><body><iframe width=\"100%\" height=\"100%\" src=\"https://www.youtube-nocookie.com/embed/" + youTubeId + "?autoplay=1&playsinline=1&controls=1&rel=0&modestbranding=1\" allow=\"autoplay; encrypted-media; fullscreen\" allowfullscreen></iframe></body></html>";
-                youtubeWebView.loadDataWithBaseURL("https://www.youtube.com", html, "text/html", "UTF-8", null);
             }
         } else {
             if (youtubePlayerView != null) {

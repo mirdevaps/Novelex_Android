@@ -134,6 +134,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }, "reels-catalog-sync").start();
         }
+        new Thread(() -> dbHelper.ensureFrutasDramaSync(), "ensure-frutas").start();
         setupSearch();
         if (getIntent().getBooleanExtra("open_doramas", false)) switchCatalog(true);
         int requestedTab = getIntent().getIntExtra("open_bottom_tab", 0);
@@ -678,6 +679,10 @@ public class MainActivity extends AppCompatActivity {
         new Thread(() -> {
             if (drama.getEpisodes().isEmpty()) {
                 List<Episode> eps = dbHelper.getEpisodesForDrama(drama.getId());
+                if (eps.isEmpty() && "novela_das_frutas".equals(drama.getId())) {
+                    dbHelper.ensureFrutasDramaSync();
+                    eps = dbHelper.getEpisodesForDrama(drama.getId());
+                }
                 drama.setEpisodes(eps);
             }
             runOnUiThread(() -> {
