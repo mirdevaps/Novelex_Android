@@ -151,6 +151,76 @@
                 android:gravity="center"
                 android:orientation="horizontal" />
 
+            <!-- Lançamentos Carousel Section (Acima de Continuar Assistindo) -->
+            <LinearLayout
+                android:id="@+id/homeReleasesSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingTop="10dp"
+                android:paddingBottom="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="20dp"
+                    android:paddingBottom="8dp">
+
+                    <View
+                        android:layout_width="4dp"
+                        android:layout_height="18dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@color/novelex_primary_pink" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/home_releases"
+                            android:textColor="@color/novelex_text_white"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/home_releases_info"
+                            android:textColor="@color/novelex_text_muted"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/homeReleasesSeeAll"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:padding="6dp"
+                        android:text="Ver todos"
+                        android:textColor="@color/novelex_primary_pink"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/homeReleasesList"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clipToPadding="false"
+                    android:nestedScrollingEnabled="false"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp" />
+            </LinearLayout>
+
             <!-- Continuar Assistindo Carousel Section -->
             <LinearLayout
                 android:id="@+id/homeContinueSection"
@@ -225,16 +295,6 @@
             <!-- Popular / Ranking Section (com anúncio nativo integrado abaixo da 2ª linha) -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/homeRanking"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:clipToPadding="false"
-                android:minHeight="360dp"
-                android:nestedScrollingEnabled="false"
-                android:paddingBottom="16dp" />
-
-            <!-- Releases Section -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/homeReleases"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:clipToPadding="false"

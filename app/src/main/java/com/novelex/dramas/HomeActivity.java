@@ -19,7 +19,7 @@ public class HomeActivity extends AppCompatActivity {
     private View continueSection;
     private RecyclerView continueList;
     private MainCombinedAdapter adapter;
-    private MainCombinedAdapter releasesAdapter;
+    private HomeReleaseAdapter releasesAdapter;
     private HomeHighlightAdapter highlightAdapter;
     private androidx.viewpager2.widget.ViewPager2 highlightPager;
     private android.widget.LinearLayout dots;
@@ -66,7 +66,6 @@ public class HomeActivity extends AppCompatActivity {
         View continueSeeAll = findViewById(R.id.homeContinueSeeAll);
         if (continueSeeAll != null) continueSeeAll.setOnClickListener(v -> openCatalogTab(2));
         RecyclerView list = findViewById(R.id.homeRanking);
-        RecyclerView releasesList = findViewById(R.id.homeReleases);
         int columns = getResources().getInteger(R.integer.catalog_columns);
         GridLayoutManager manager = new GridLayoutManager(this, columns);
         manager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
@@ -78,13 +77,12 @@ public class HomeActivity extends AppCompatActivity {
         adapter.setAdSpacing(4, 6, 3);
         adapter.setSectionContent(getString(R.string.home_popular), getString(R.string.home_loading));
         list.setAdapter(adapter);
-        GridLayoutManager releasesGrid = new GridLayoutManager(this, columns);
-        releasesList.setLayoutManager(releasesGrid);
-        releasesAdapter = new MainCombinedAdapter(this, releases, Collections.emptyList(), this::openDrama, category -> {}, new HashMap<>(), null);
-        releasesAdapter.setDoramaCatalog(true);
-        releasesAdapter.setSectionContent(getString(R.string.home_releases), getString(R.string.home_releases_info));
-        releasesGrid.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() { @Override public int getSpanSize(int position) { return releasesAdapter.isFullSpan(position) ? columns : 1; }});
+        RecyclerView releasesList = findViewById(R.id.homeReleasesList);
+        releasesList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        releasesAdapter = new HomeReleaseAdapter(this, releases, this::openDrama);
         releasesList.setAdapter(releasesAdapter);
+        View releasesSeeAll = findViewById(R.id.homeReleasesSeeAll);
+        if (releasesSeeAll != null) releasesSeeAll.setOnClickListener(v -> openCatalog(true));
         if (BuildConfig.DEBUG) com.google.android.gms.ads.MobileAds.setRequestConfiguration(new com.google.android.gms.ads.RequestConfiguration.Builder().setTestDeviceIds(Collections.singletonList("C25AC9B220BD3A44921ABFD2AEACBED7")).build());
         com.google.android.gms.ads.MobileAds.initialize(this, status -> {
             adsReady = true;
