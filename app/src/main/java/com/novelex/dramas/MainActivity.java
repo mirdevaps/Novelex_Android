@@ -77,9 +77,9 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String MAIN_NATIVE_AD_UNIT_ID = "ca-app-pub-3437419183521595/9373166289";
 
-    // "Dublados" adicionado em destaque logo após "Todos"
+    // "Dublados" e "Frutas" adicionados em destaque logo após "Todos"
     private final List<String> shortDramaCategories = new ArrayList<>(Arrays.asList(
-        "Todos", "Dublados", "Histórias da Ásia", "Identidade Escondida", "Bilionários & CEOs", "Vingança", "Romance", "Lançamentos"
+        "Todos", "Dublados", "Frutas", "Histórias da Ásia", "Identidade Escondida", "Bilionários & CEOs", "Vingança", "Romance", "Lançamentos"
     ));
     private final List<String> doramaCategories = Arrays.asList("Todos", "Dublados");
 

@@ -16,6 +16,14 @@
         app:resize_mode="zoom"
         app:surface_type="texture_view" />
 
+    <!-- YouTube Player View -->
+    <com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
+        android:id="@+id/youtubePlayerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        app:enableAutomaticInitialization="false" />
+
     <!-- Camada Transparente dedicada para Gestos de Toque (1x Pausa, 2x Curte, Fling troca ep) -->
     <View
         android:id="@+id/touchOverlay"

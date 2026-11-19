@@ -16,7 +16,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String TAG = "NovelexDB";
     private static final String DB_NAME = "novelex.db";
-    private static final int DB_VERSION = 3;
+    private static final int DB_VERSION = 4;
     private final Context context;
     private final String dbPath;
 

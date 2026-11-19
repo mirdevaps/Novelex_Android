@@ -51,6 +51,10 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener;
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants;
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -81,6 +85,10 @@ public class DramaPlayerActivity extends AppCompatActivity {
     private ImageView btnPrevEpisode;
 
     private ExoPlayer exoPlayer;
+    private YouTubePlayerView youtubePlayerView;
+    private YouTubePlayer activeYouTubePlayer;
+    private String pendingYouTubeVideoId;
+    private boolean isYouTubeInitialized = false;
     private int currentEpisodeIndex = 0;
     private EpisodeAccess episodeAccess;
     private boolean isLiked = false;
@@ -239,6 +247,10 @@ public class DramaPlayerActivity extends AppCompatActivity {
 
     private void initViews() {
         singlePlayerView = findViewById(R.id.singlePlayerView);
+        youtubePlayerView = findViewById(R.id.youtubePlayerView);
+        if (youtubePlayerView != null) {
+            getLifecycle().addObserver(youtubePlayerView);
+        }
         touchOverlay = findViewById(R.id.touchOverlay);
         playerBuffering = findViewById(R.id.playerBuffering);
         playerDramaTitle = findViewById(R.id.playerDramaTitle);
@@ -408,13 +420,63 @@ public class DramaPlayerActivity extends AppCompatActivity {
             btnDownload.setColorFilter(0xFFFFFFFF);
         }
 
-        if (streamUrl != null && !streamUrl.isEmpty()) {
-            MediaItem mediaItem = MediaItem.fromUri(streamUrl);
-            exoPlayer.setMediaItem(mediaItem);
-            exoPlayer.prepare();
-            exoPlayer.play();
+        String youTubeId = extractYouTubeVideoId(streamUrl);
+        if (youTubeId != null) {
+            singlePlayerView.setVisibility(View.GONE);
+            touchOverlay.setVisibility(View.GONE);
+            if (playerBuffering != null) playerBuffering.setVisibility(View.GONE);
+            if (exoPlayer != null) exoPlayer.pause();
+            if (youtubePlayerView != null) {
+                youtubePlayerView.setVisibility(View.VISIBLE);
+                pendingYouTubeVideoId = youTubeId;
+                if (activeYouTubePlayer != null) {
+                    activeYouTubePlayer.loadVideo(youTubeId, 0f);
+                } else if (!isYouTubeInitialized) {
+                    isYouTubeInitialized = true;
+                    youtubePlayerView.initialize(new AbstractYouTubePlayerListener() {
+                        @Override
+                        public void onReady(@androidx.annotation.NonNull YouTubePlayer youTubePlayer) {
+                            activeYouTubePlayer = youTubePlayer;
+                            if (pendingYouTubeVideoId != null) {
+                                youTubePlayer.loadVideo(pendingYouTubeVideoId, 0f);
+                            }
+                        }
+
+                        @Override
+                        public void onStateChange(@androidx.annotation.NonNull YouTubePlayer youTubePlayer, @androidx.annotation.NonNull PlayerConstants.PlayerState state) {
+                            if (state == PlayerConstants.PlayerState.ENDED) {
+                                if (currentEpisodeIndex + 1 < currentDrama.getEpisodes().size()) {
+                                    playEpisode(currentEpisodeIndex + 1);
+                                }
+                            }
+                        }
+                    });
+                }
+            }
             imgPlayPauseOverlay.setVisibility(View.GONE);
+        } else {
+            if (youtubePlayerView != null) {
+                youtubePlayerView.setVisibility(View.GONE);
+                if (activeYouTubePlayer != null) activeYouTubePlayer.pause();
+            }
+            touchOverlay.setVisibility(View.VISIBLE);
+            singlePlayerView.setVisibility(View.VISIBLE);
+            if (streamUrl != null && !streamUrl.isEmpty()) {
+                MediaItem mediaItem = MediaItem.fromUri(streamUrl);
+                exoPlayer.setMediaItem(mediaItem);
+                exoPlayer.prepare();
+                exoPlayer.play();
+                imgPlayPauseOverlay.setVisibility(View.GONE);
+            }
         }
+    }
+
+    private String extractYouTubeVideoId(String url) {
+        if (url == null || url.isEmpty()) return null;
+        if (url.length() == 11 && !url.contains("/") && !url.contains(".") && !url.contains(":")) return url;
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?:v=|/videos/|embed/|youtu\\.be/|/v/|/e/|watch\\?v=|watch\\?.+&v=)([a-zA-Z0-9_-]{11})").matcher(url);
+        if (m.find()) return m.group(1);
+        return null;
     }
 
     private File getOfflineEpisodeFile(int episodeNum) {
@@ -431,6 +493,11 @@ public class DramaPlayerActivity extends AppCompatActivity {
 
         if (currentEpisodeIndex >= currentDrama.getEpisodes().size()) return;
         Episode ep = currentDrama.getEpisodes().get(currentEpisodeIndex);
+
+        if (extractYouTubeVideoId(ep.getStreamUrl()) != null) {
+            Toast.makeText(this, "Episódio disponível online", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         File target = getOfflineEpisodeFile(ep.getNumber());
         if (target.exists() && target.length() > 50000) {
@@ -805,6 +872,9 @@ public class DramaPlayerActivity extends AppCompatActivity {
     protected void onPause() {
         rewardedScreenActive = false;
         super.onPause();
+        if (activeYouTubePlayer != null) {
+            activeYouTubePlayer.pause();
+        }
         if (exoPlayer != null) {
             exoPlayer.pause();
         }
@@ -814,6 +884,9 @@ public class DramaPlayerActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         rewardedAd = null;
+        if (youtubePlayerView != null) {
+            youtubePlayerView.release();
+        }
         if (exoPlayer != null) {
             exoPlayer.release();
             exoPlayer = null;
