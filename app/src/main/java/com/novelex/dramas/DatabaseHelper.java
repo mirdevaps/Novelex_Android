@@ -45,14 +45,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 if (installed.getVersion() < DB_VERSION) {
                     installed.close();
                     installed = null;
-                    if (!dbFile.delete()) {
-                        Log.e(TAG, "Não foi possível atualizar o catálogo local.");
-                        return;
-                    }
+                    context.deleteDatabase(DB_NAME);
+                    new File(dbPath + "-wal").delete();
+                    new File(dbPath + "-shm").delete();
+                    new File(dbPath + "-journal").delete();
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Não foi possível conferir a versão do catálogo.", e);
-                return;
+                context.deleteDatabase(DB_NAME);
             } finally {
                 if (installed != null) installed.close();
             }
@@ -84,12 +84,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     @Override
     public void onOpen(SQLiteDatabase db) {
         super.onOpen(db);
-        for (String[] column : new String[][]{{"dramas", "year", "INTEGER DEFAULT 0"}, {"episodes", "thumbnail", "TEXT"}}) {
-            boolean exists = false;
-            try (Cursor cursor = db.rawQuery("PRAGMA table_info(" + column[0] + ")", null)) {
-                while (cursor.moveToNext()) if (column[1].equals(cursor.getString(1))) exists = true;
+        try {
+            for (String[] column : new String[][]{{"dramas", "year", "INTEGER DEFAULT 0"}, {"episodes", "thumbnail", "TEXT"}}) {
+                boolean exists = false;
+                try (Cursor cursor = db.rawQuery("PRAGMA table_info(" + column[0] + ")", null)) {
+                    while (cursor != null && cursor.moveToNext()) {
+                        if (column[1].equals(cursor.getString(1))) exists = true;
+                    }
+                }
+                if (!exists) {
+                    db.execSQL("ALTER TABLE " + column[0] + " ADD COLUMN " + column[1] + " " + column[2]);
+                }
             }
-            if (!exists) db.execSQL("ALTER TABLE " + column[0] + " ADD COLUMN " + column[1] + " " + column[2]);
+        } catch (Exception e) {
+            Log.w(TAG, "onOpen column check warning: " + e.getMessage());
         }
     }
 
