@@ -48,6 +48,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -119,6 +120,13 @@ public class DramaPlayerActivity extends AppCompatActivity {
 
         prefs = getSharedPreferences("novelex_prefs", MODE_PRIVATE);
         deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        if (deviceId == null || deviceId.trim().isEmpty() || "9774d56d682e549c".equals(deviceId)) {
+            deviceId = prefs.getString("device_unique_uuid", null);
+            if (deviceId == null) {
+                deviceId = java.util.UUID.randomUUID().toString();
+                prefs.edit().putString("device_unique_uuid", deviceId).apply();
+            }
+        }
         firestore = FirebaseFirestore.getInstance();
 
         episodeAccess = new EpisodeAccess(prefs, currentDrama.getId());
@@ -662,66 +670,73 @@ public class DramaPlayerActivity extends AppCompatActivity {
     private void syncWithFirestore() {
         if (likesCountListener != null) likesCountListener.remove();
         if (likedStateListener != null) likedStateListener.remove();
+
         DocumentReference dramaRef = firestore.collection("dramas").document(currentDrama.getId());
         likesCountListener = dramaRef.addSnapshotListener((snapshot, error) -> {
-            if (error != null) { android.util.Log.w("NovelexLikes", "Counter read failed", error); return; }
+            if (error != null) {
+                android.util.Log.w("NovelexLikes", "Counter read failed: " + error.getMessage());
+                return;
+            }
             if (isFinishing() || isDestroyed()) return;
             Long count = snapshot != null && snapshot.exists() ? snapshot.getLong("likes_count") : null;
-            likesCount = count == null ? 0L : Math.max(0L, count);
-            txtLikeCount.setText(String.valueOf(likesCount));
+            if (count != null) {
+                likesCount = Math.max(0L, count);
+                txtLikeCount.setText(String.valueOf(likesCount));
+            }
         });
+
         likedStateListener = firestore.collection("users").document(deviceId).collection("likes")
             .document(currentDrama.getId()).addSnapshotListener((snapshot, error) -> {
-                if (error != null) { android.util.Log.w("NovelexLikes", "Like state read failed", error); return; }
+                if (error != null) {
+                    android.util.Log.w("NovelexLikes", "Like state read failed: " + error.getMessage());
+                    return;
+                }
                 if (snapshot == null || isFinishing() || isDestroyed()) return;
-                isLiked = snapshot.exists();
-                prefs.edit().putBoolean("liked_" + currentDrama.getId(), isLiked).apply();
-                updateLikeIcon();
+                if (snapshot.exists()) {
+                    isLiked = true;
+                    prefs.edit().putBoolean("liked_" + currentDrama.getId(), true).apply();
+                    updateLikeIcon();
+                }
             });
+
         updateLikeIcon();
         updateFavoriteIcon();
     }
 
     private void setDramaLiked(boolean desired) {
-        if (likeRequestInFlight || isFinishing() || isDestroyed()) return;
-        likeRequestInFlight = true;
-        btnLike.setEnabled(false);
-        DocumentReference drama = firestore.collection("dramas").document(currentDrama.getId());
-        DocumentReference like = firestore.collection("users").document(deviceId)
+        if (isFinishing() || isDestroyed()) return;
+        if (isLiked == desired) return;
+
+        // Atualização Otimista Imediata na UI e Preferences
+        isLiked = desired;
+        prefs.edit().putBoolean("liked_" + currentDrama.getId(), desired).apply();
+        updateLikeIcon();
+
+        likesCount = Math.max(0L, likesCount + (desired ? 1 : -1));
+        txtLikeCount.setText(String.valueOf(likesCount));
+
+        DocumentReference dramaRef = firestore.collection("dramas").document(currentDrama.getId());
+        DocumentReference userLikeRef = firestore.collection("users").document(deviceId)
             .collection("likes").document(currentDrama.getId());
-        firestore.runTransaction(transaction -> {
-            com.google.firebase.firestore.DocumentSnapshot storedLike = transaction.get(like);
-            com.google.firebase.firestore.DocumentSnapshot storedDrama = transaction.get(drama);
-            boolean exists = storedLike.exists();
-            Long storedCount = storedDrama.getLong("likes_count");
-            long count = storedCount == null ? 0L : Math.max(0L, storedCount);
-            if (exists != desired) {
-                Map<String, Object> totals = new HashMap<>();
-                totals.put("title", currentDrama.getTitle());
-                totals.put("likes_count", desired ? count + 1 : Math.max(0L, count - 1));
-                transaction.set(drama, totals, com.google.firebase.firestore.SetOptions.merge());
-                if (desired) {
-                    Map<String, Object> data = new HashMap<>();
-                    data.put("drama_id", currentDrama.getId());
-                    data.put("timestamp", FieldValue.serverTimestamp());
-                    transaction.set(like, data);
-                } else transaction.delete(like);
-            }
-            return desired;
-        }).addOnSuccessListener(value -> {
-            likeRequestInFlight = false;
-            if (isFinishing() || isDestroyed()) return;
-            btnLike.setEnabled(true);
-            isLiked = value;
-            prefs.edit().putBoolean("liked_" + currentDrama.getId(), value).apply();
-            updateLikeIcon();
-        }).addOnFailureListener(error -> {
-            likeRequestInFlight = false;
-            android.util.Log.w("NovelexLikes", "Like transaction failed", error);
-            if (isFinishing() || isDestroyed()) return;
-            btnLike.setEnabled(true);
-            Toast.makeText(this, R.string.like_failed, Toast.LENGTH_SHORT).show();
-        });
+
+        if (desired) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("drama_id", currentDrama.getId());
+            data.put("timestamp", FieldValue.serverTimestamp());
+            userLikeRef.set(data);
+
+            Map<String, Object> dramaData = new HashMap<>();
+            dramaData.put("title", currentDrama.getTitle());
+            dramaData.put("likes_count", FieldValue.increment(1));
+            dramaRef.set(dramaData, SetOptions.merge());
+        } else {
+            userLikeRef.delete();
+
+            Map<String, Object> dramaData = new HashMap<>();
+            dramaData.put("title", currentDrama.getTitle());
+            dramaData.put("likes_count", FieldValue.increment(-1));
+            dramaRef.set(dramaData, SetOptions.merge());
+        }
     }
 
     private void setupActions() {

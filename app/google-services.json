@@ -1,32 +1,14 @@
 {
   "project_info": {
-    "project_number": "53474860683",
-    "project_id": "novelex-dramas",
-    "storage_bucket": "novelex-dramas.firebasestorage.app"
+    "project_number": "254663326317",
+    "firebase_url": "https://novelex-785a8-default-rtdb.firebaseio.com",
+    "project_id": "novelex-785a8",
+    "storage_bucket": "novelex-785a8.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:53474860683:android:5d9d00a84b92f46177be8e",
-        "android_client_info": {
-          "package_name": "com.novelex.dramas"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyADS3lUc_4PltUyxXk04_tCXk1qM2Mm3Lc"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:53474860683:android:5d9d00a84b92f46177be8e",
+        "mobilesdk_app_id": "1:254663326317:android:8e3e6daa24e6754155dd64",
         "android_client_info": {
           "package_name": "com.jack.novelex"
         }
@@ -34,7 +16,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyADS3lUc_4PltUyxXk04_tCXk1qM2Mm3Lc"
+          "current_key": "AIzaSyDF5SuqXs6hmjON5aUXidJyCNhJqyYcTzc"
         }
       ],
       "services": {
