@@ -51,13 +51,8 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener;
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants;
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView;
 import java.io.File;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class DramaPlayerActivity extends AppCompatActivity {
@@ -86,10 +81,6 @@ public class DramaPlayerActivity extends AppCompatActivity {
     private ImageView btnPrevEpisode;
 
     private ExoPlayer exoPlayer;
-    private YouTubePlayerView youtubePlayerView;
-    private android.webkit.WebView youtubeWebView;
-    private YouTubePlayer activeYouTubePlayer;
-    private String pendingYouTubeVideoId;
     private int currentEpisodeIndex = 0;
     private EpisodeAccess episodeAccess;
     private boolean isLiked = false;
@@ -113,14 +104,6 @@ public class DramaPlayerActivity extends AppCompatActivity {
         setContentView(R.layout.activity_player);
 
         currentDrama = (Drama) getIntent().getSerializableExtra("drama");
-        if (currentDrama != null && currentDrama.getEpisodes().isEmpty()) {
-            List<Episode> eps = DatabaseHelper.getInstance(this).getEpisodesForDrama(currentDrama.getId());
-            if (eps.isEmpty() && "novela_das_frutas".equals(currentDrama.getId())) {
-                DatabaseHelper.getInstance(this).ensureFrutasDramaSync();
-                eps = DatabaseHelper.getInstance(this).getEpisodesForDrama(currentDrama.getId());
-            }
-            currentDrama.setEpisodes(eps);
-        }
         if (currentDrama == null || currentDrama.getEpisodes().isEmpty()) {
             Toast.makeText(this, getString(R.string.ui_35), Toast.LENGTH_SHORT).show();
             finish();
@@ -256,57 +239,6 @@ public class DramaPlayerActivity extends AppCompatActivity {
 
     private void initViews() {
         singlePlayerView = findViewById(R.id.singlePlayerView);
-        youtubePlayerView = findViewById(R.id.youtubePlayerView);
-        youtubeWebView = findViewById(R.id.youtubeWebView);
-        if (youtubeWebView != null) {
-            android.webkit.WebSettings ws = youtubeWebView.getSettings();
-            ws.setJavaScriptEnabled(true);
-            ws.setDomStorageEnabled(true);
-            ws.setMediaPlaybackRequiresUserGesture(false);
-            youtubeWebView.setWebChromeClient(new android.webkit.WebChromeClient());
-            youtubeWebView.setWebViewClient(new android.webkit.WebViewClient());
-            youtubeWebView.setBackgroundColor(0xFF000000);
-        }
-        if (youtubePlayerView != null) {
-            getLifecycle().addObserver(youtubePlayerView);
-            youtubePlayerView.addYouTubePlayerListener(new AbstractYouTubePlayerListener() {
-                @Override
-                public void onReady(@androidx.annotation.NonNull YouTubePlayer youTubePlayer) {
-                    activeYouTubePlayer = youTubePlayer;
-                    if (pendingYouTubeVideoId != null) {
-                        youTubePlayer.loadVideo(pendingYouTubeVideoId, 0f);
-                    }
-                }
-
-                @Override
-                public void onError(@androidx.annotation.NonNull YouTubePlayer youTubePlayer, @androidx.annotation.NonNull PlayerConstants.PlayerError error) {
-                    android.util.Log.w("DramaPlayer", "YouTubePlayer error: " + error + ", activating WebView fallback");
-                    runOnUiThread(() -> {
-                        if (youtubePlayerView != null) youtubePlayerView.setVisibility(View.GONE);
-                        if (playerBuffering != null) playerBuffering.setVisibility(View.GONE);
-                        if (youtubeWebView != null && pendingYouTubeVideoId != null) {
-                            youtubeWebView.setVisibility(View.VISIBLE);
-                            String html = "<!DOCTYPE html><html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\"><style>* { margin:0; padding:0; box-sizing:border-box; background:#000; } html,body { width:100%; height:100%; overflow:hidden; display:flex; align-items:center; justify-content:center; } iframe { width:100%; height:100%; border:none; }</style></head><body><iframe width=\"100%\" height=\"100%\" src=\"https://www.youtube-nocookie.com/embed/" + pendingYouTubeVideoId + "?autoplay=1&playsinline=1&controls=1&rel=0&modestbranding=1\" allow=\"autoplay; encrypted-media; fullscreen\" allowfullscreen></iframe></body></html>";
-                            youtubeWebView.loadDataWithBaseURL("https://www.youtube.com", html, "text/html", "UTF-8", null);
-                        }
-                    });
-                }
-
-                @Override
-                public void onStateChange(@androidx.annotation.NonNull YouTubePlayer youTubePlayer, @androidx.annotation.NonNull PlayerConstants.PlayerState state) {
-                    if (state == PlayerConstants.PlayerState.BUFFERING) {
-                        if (playerBuffering != null) playerBuffering.setVisibility(View.VISIBLE);
-                    } else {
-                        if (playerBuffering != null) playerBuffering.setVisibility(View.GONE);
-                    }
-                    if (state == PlayerConstants.PlayerState.ENDED) {
-                        if (currentEpisodeIndex + 1 < currentDrama.getEpisodes().size()) {
-                            playEpisode(currentEpisodeIndex + 1);
-                        }
-                    }
-                }
-            });
-        }
         touchOverlay = findViewById(R.id.touchOverlay);
         playerBuffering = findViewById(R.id.playerBuffering);
         playerDramaTitle = findViewById(R.id.playerDramaTitle);
@@ -339,12 +271,6 @@ public class DramaPlayerActivity extends AppCompatActivity {
     private void exitPlayerWithAd() {
         if (exoPlayer != null) {
             exoPlayer.pause();
-        }
-        if (activeYouTubePlayer != null) {
-            activeYouTubePlayer.pause();
-        }
-        if (youtubeWebView != null) {
-            youtubeWebView.onPause();
         }
         CatalogInterstitial.getInstance().showOnNavigation(this, this::finish);
     }
@@ -482,52 +408,13 @@ public class DramaPlayerActivity extends AppCompatActivity {
             btnDownload.setColorFilter(0xFFFFFFFF);
         }
 
-        String youTubeId = extractYouTubeVideoId(streamUrl);
-        if (youTubeId != null) {
-            singlePlayerView.setVisibility(View.GONE);
-            touchOverlay.setVisibility(View.GONE);
-            if (playerBuffering != null) playerBuffering.setVisibility(View.VISIBLE);
-            if (exoPlayer != null) exoPlayer.pause();
+        if (streamUrl != null && !streamUrl.isEmpty()) {
+            MediaItem mediaItem = MediaItem.fromUri(streamUrl);
+            exoPlayer.setMediaItem(mediaItem);
+            exoPlayer.prepare();
+            exoPlayer.play();
             imgPlayPauseOverlay.setVisibility(View.GONE);
-
-            pendingYouTubeVideoId = youTubeId;
-            if (youtubeWebView != null) {
-                youtubeWebView.setVisibility(View.GONE);
-                youtubeWebView.loadUrl("about:blank");
-            }
-            if (youtubePlayerView != null) {
-                youtubePlayerView.setVisibility(View.VISIBLE);
-                if (activeYouTubePlayer != null) {
-                    activeYouTubePlayer.loadVideo(youTubeId, 0f);
-                }
-            }
-        } else {
-            if (youtubePlayerView != null) {
-                youtubePlayerView.setVisibility(View.GONE);
-                if (activeYouTubePlayer != null) activeYouTubePlayer.pause();
-            }
-            if (youtubeWebView != null) {
-                youtubeWebView.setVisibility(View.GONE);
-                youtubeWebView.loadUrl("about:blank");
-            }
-            touchOverlay.setVisibility(View.VISIBLE);
-            singlePlayerView.setVisibility(View.VISIBLE);
-            if (streamUrl != null && !streamUrl.isEmpty()) {
-                MediaItem mediaItem = MediaItem.fromUri(streamUrl);
-                exoPlayer.setMediaItem(mediaItem);
-                exoPlayer.prepare();
-                exoPlayer.play();
-                imgPlayPauseOverlay.setVisibility(View.GONE);
-            }
         }
-    }
-
-    private String extractYouTubeVideoId(String url) {
-        if (url == null || url.isEmpty()) return null;
-        if (url.length() == 11 && !url.contains("/") && !url.contains(".") && !url.contains(":")) return url;
-        java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?:v=|/videos/|embed/|youtu\\.be/|/v/|/e/|watch\\?v=|watch\\?.+&v=)([a-zA-Z0-9_-]{11})").matcher(url);
-        if (m.find()) return m.group(1);
-        return null;
     }
 
     private File getOfflineEpisodeFile(int episodeNum) {
@@ -544,11 +431,6 @@ public class DramaPlayerActivity extends AppCompatActivity {
 
         if (currentEpisodeIndex >= currentDrama.getEpisodes().size()) return;
         Episode ep = currentDrama.getEpisodes().get(currentEpisodeIndex);
-
-        if (extractYouTubeVideoId(ep.getStreamUrl()) != null) {
-            Toast.makeText(this, "Episódio disponível online", Toast.LENGTH_SHORT).show();
-            return;
-        }
 
         File target = getOfflineEpisodeFile(ep.getNumber());
         if (target.exists() && target.length() > 50000) {
@@ -923,13 +805,6 @@ public class DramaPlayerActivity extends AppCompatActivity {
     protected void onPause() {
         rewardedScreenActive = false;
         super.onPause();
-        if (activeYouTubePlayer != null) {
-            activeYouTubePlayer.pause();
-        }
-        if (youtubeWebView != null) {
-            youtubeWebView.onPause();
-            youtubeWebView.pauseTimers();
-        }
         if (exoPlayer != null) {
             exoPlayer.pause();
         }
@@ -939,13 +814,6 @@ public class DramaPlayerActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         rewardedAd = null;
-        if (youtubePlayerView != null) {
-            youtubePlayerView.release();
-        }
-        if (youtubeWebView != null) {
-            youtubeWebView.destroy();
-            youtubeWebView = null;
-        }
         if (exoPlayer != null) {
             exoPlayer.release();
             exoPlayer = null;

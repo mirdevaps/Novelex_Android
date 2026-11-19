@@ -77,9 +77,9 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String MAIN_NATIVE_AD_UNIT_ID = "ca-app-pub-3437419183521595/9373166289";
 
-    // "Dublados" e "Frutas" adicionados em destaque logo após "Todos"
+    // "Dublados" adicionado em destaque logo após "Todos"
     private final List<String> shortDramaCategories = new ArrayList<>(Arrays.asList(
-        "Todos", "Dublados", "Frutas", "Histórias da Ásia", "Identidade Escondida", "Bilionários & CEOs", "Vingança", "Romance", "Lançamentos"
+        "Todos", "Dublados", "Histórias da Ásia", "Identidade Escondida", "Bilionários & CEOs", "Vingança", "Romance", "Lançamentos"
     ));
     private final List<String> doramaCategories = Arrays.asList("Todos", "Dublados");
 
@@ -134,7 +134,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }, "reels-catalog-sync").start();
         }
-        new Thread(() -> dbHelper.ensureFrutasDramaSync(), "ensure-frutas").start();
         setupSearch();
         if (getIntent().getBooleanExtra("open_doramas", false)) switchCatalog(true);
         int requestedTab = getIntent().getIntExtra("open_bottom_tab", 0);
@@ -679,10 +678,6 @@ public class MainActivity extends AppCompatActivity {
         new Thread(() -> {
             if (drama.getEpisodes().isEmpty()) {
                 List<Episode> eps = dbHelper.getEpisodesForDrama(drama.getId());
-                if (eps.isEmpty() && "novela_das_frutas".equals(drama.getId())) {
-                    dbHelper.ensureFrutasDramaSync();
-                    eps = dbHelper.getEpisodesForDrama(drama.getId());
-                }
                 drama.setEpisodes(eps);
             }
             runOnUiThread(() -> {
