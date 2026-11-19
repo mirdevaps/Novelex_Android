@@ -86,9 +86,9 @@ public class DramaPlayerActivity extends AppCompatActivity {
 
     private ExoPlayer exoPlayer;
     private YouTubePlayerView youtubePlayerView;
+    private android.webkit.WebView youtubeWebView;
     private YouTubePlayer activeYouTubePlayer;
     private String pendingYouTubeVideoId;
-    private boolean isYouTubeInitialized = false;
     private int currentEpisodeIndex = 0;
     private EpisodeAccess episodeAccess;
     private boolean isLiked = false;
@@ -248,8 +248,43 @@ public class DramaPlayerActivity extends AppCompatActivity {
     private void initViews() {
         singlePlayerView = findViewById(R.id.singlePlayerView);
         youtubePlayerView = findViewById(R.id.youtubePlayerView);
+        youtubeWebView = findViewById(R.id.youtubeWebView);
+        if (youtubeWebView != null) {
+            android.webkit.WebSettings ws = youtubeWebView.getSettings();
+            ws.setJavaScriptEnabled(true);
+            ws.setDomStorageEnabled(true);
+            ws.setMediaPlaybackRequiresUserGesture(false);
+            youtubeWebView.setWebChromeClient(new android.webkit.WebChromeClient());
+            youtubeWebView.setWebViewClient(new android.webkit.WebViewClient());
+            youtubeWebView.setBackgroundColor(0xFF000000);
+        }
         if (youtubePlayerView != null) {
             getLifecycle().addObserver(youtubePlayerView);
+            youtubePlayerView.addYouTubePlayerListener(new AbstractYouTubePlayerListener() {
+                @Override
+                public void onReady(@androidx.annotation.NonNull YouTubePlayer youTubePlayer) {
+                    activeYouTubePlayer = youTubePlayer;
+                    if (pendingYouTubeVideoId != null) {
+                        youTubePlayer.loadVideo(pendingYouTubeVideoId, 0f);
+                    }
+                }
+
+                @Override
+                public void onError(@androidx.annotation.NonNull YouTubePlayer youTubePlayer, @androidx.annotation.NonNull PlayerConstants.PlayerError error) {
+                    android.util.Log.w("DramaPlayer", "YouTubePlayer error: " + error + ", activating WebView fallback");
+                    if (youtubePlayerView != null) youtubePlayerView.setVisibility(View.GONE);
+                    if (youtubeWebView != null) youtubeWebView.setVisibility(View.VISIBLE);
+                }
+
+                @Override
+                public void onStateChange(@androidx.annotation.NonNull YouTubePlayer youTubePlayer, @androidx.annotation.NonNull PlayerConstants.PlayerState state) {
+                    if (state == PlayerConstants.PlayerState.ENDED) {
+                        if (currentEpisodeIndex + 1 < currentDrama.getEpisodes().size()) {
+                            playEpisode(currentEpisodeIndex + 1);
+                        }
+                    }
+                }
+            });
         }
         touchOverlay = findViewById(R.id.touchOverlay);
         playerBuffering = findViewById(R.id.playerBuffering);
@@ -426,38 +461,28 @@ public class DramaPlayerActivity extends AppCompatActivity {
             touchOverlay.setVisibility(View.GONE);
             if (playerBuffering != null) playerBuffering.setVisibility(View.GONE);
             if (exoPlayer != null) exoPlayer.pause();
+            imgPlayPauseOverlay.setVisibility(View.GONE);
+
+            pendingYouTubeVideoId = youTubeId;
             if (youtubePlayerView != null) {
                 youtubePlayerView.setVisibility(View.VISIBLE);
-                pendingYouTubeVideoId = youTubeId;
                 if (activeYouTubePlayer != null) {
                     activeYouTubePlayer.loadVideo(youTubeId, 0f);
-                } else if (!isYouTubeInitialized) {
-                    isYouTubeInitialized = true;
-                    youtubePlayerView.initialize(new AbstractYouTubePlayerListener() {
-                        @Override
-                        public void onReady(@androidx.annotation.NonNull YouTubePlayer youTubePlayer) {
-                            activeYouTubePlayer = youTubePlayer;
-                            if (pendingYouTubeVideoId != null) {
-                                youTubePlayer.loadVideo(pendingYouTubeVideoId, 0f);
-                            }
-                        }
-
-                        @Override
-                        public void onStateChange(@androidx.annotation.NonNull YouTubePlayer youTubePlayer, @androidx.annotation.NonNull PlayerConstants.PlayerState state) {
-                            if (state == PlayerConstants.PlayerState.ENDED) {
-                                if (currentEpisodeIndex + 1 < currentDrama.getEpisodes().size()) {
-                                    playEpisode(currentEpisodeIndex + 1);
-                                }
-                            }
-                        }
-                    });
                 }
             }
-            imgPlayPauseOverlay.setVisibility(View.GONE);
+
+            if (youtubeWebView != null) {
+                String html = "<!DOCTYPE html><html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\"><style>* { margin:0; padding:0; box-sizing:border-box; background:#000; } html,body { width:100%; height:100%; overflow:hidden; display:flex; align-items:center; justify-content:center; } iframe { width:100%; height:100%; border:none; }</style></head><body><iframe width=\"100%\" height=\"100%\" src=\"https://www.youtube-nocookie.com/embed/" + youTubeId + "?autoplay=1&playsinline=1&controls=1&rel=0&modestbranding=1\" allow=\"autoplay; encrypted-media; fullscreen\" allowfullscreen></iframe></body></html>";
+                youtubeWebView.loadDataWithBaseURL("https://www.youtube.com", html, "text/html", "UTF-8", null);
+            }
         } else {
             if (youtubePlayerView != null) {
                 youtubePlayerView.setVisibility(View.GONE);
                 if (activeYouTubePlayer != null) activeYouTubePlayer.pause();
+            }
+            if (youtubeWebView != null) {
+                youtubeWebView.setVisibility(View.GONE);
+                youtubeWebView.loadUrl("about:blank");
             }
             touchOverlay.setVisibility(View.VISIBLE);
             singlePlayerView.setVisibility(View.VISIBLE);
@@ -875,6 +900,10 @@ public class DramaPlayerActivity extends AppCompatActivity {
         if (activeYouTubePlayer != null) {
             activeYouTubePlayer.pause();
         }
+        if (youtubeWebView != null) {
+            youtubeWebView.onPause();
+            youtubeWebView.pauseTimers();
+        }
         if (exoPlayer != null) {
             exoPlayer.pause();
         }
@@ -886,6 +915,10 @@ public class DramaPlayerActivity extends AppCompatActivity {
         rewardedAd = null;
         if (youtubePlayerView != null) {
             youtubePlayerView.release();
+        }
+        if (youtubeWebView != null) {
+            youtubeWebView.destroy();
+            youtubeWebView = null;
         }
         if (exoPlayer != null) {
             exoPlayer.release();

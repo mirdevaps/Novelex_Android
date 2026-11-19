@@ -21,8 +21,14 @@
         android:id="@+id/youtubePlayerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="gone"
-        app:enableAutomaticInitialization="false" />
+        android:visibility="gone" />
+
+    <!-- Fallback WebView para YouTube -->
+    <WebView
+        android:id="@+id/youtubeWebView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
 
     <!-- Camada Transparente dedicada para Gestos de Toque (1x Pausa, 2x Curte, Fling troca ep) -->
     <View
